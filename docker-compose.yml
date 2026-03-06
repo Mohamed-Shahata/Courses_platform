@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    container_name: subscriptions_app
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    env_file:
+      - .env.docker
+    environment:
+      - NODE_ENV=production
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    env_file:
+      - .env.docker
+    ports:
+      - '5432:5432'
