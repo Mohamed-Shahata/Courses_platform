@@ -13,8 +13,33 @@ datasource db {
   provider = "postgresql"
 }
 
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
 model User {
   id    Int     @id @default(autoincrement())
+
   name  String
   email String  @unique
+  business_name String
+
+  password_hash String 
+
+  api_key String @unique
+  api_secret_hash String
+
+  wallet_balance Decimal @default(0)
+  currency String
+  webhook_url String?
+
+  status AccountStatus @default(PENDING_VERIFICATION)
+
+  isVerified Boolean @default(false)
+  verificationToken String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
+
