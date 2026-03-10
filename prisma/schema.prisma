@@ -18,21 +18,22 @@ enum AccountStatus {
   SUSPENDED
   PENDING_VERIFICATION
 }
-model User {
-  id    Int     @id @default(autoincrement())
 
-  name  String
-  email String  @unique
+model User {
+  id Int @id @default(autoincrement())
+
+  name          String
+  email         String @unique
   business_name String
 
-  password_hash String 
+  password_hash String
 
-  api_key String @unique
+  api_key         String @unique
   api_secret_hash String
 
   wallet_balance Decimal @default(0)
-  currency String
-  webhook_url String?
+  currency       String
+  webhook_url    String?
 
   status AccountStatus @default(PENDING_VERIFICATION)
 
@@ -44,13 +45,11 @@ model User {
   EmailVerification EmailVerification[]
 }
 
-model  EmailVerification {
-  id Int @default(autoincrement())
+model EmailVerification {
+  id     Int    @default(autoincrement())
   userId Int
-  token String @unique
-  User User @relation(fields: [userId] , references: [id] ,onDelete: Cascade)
+  token  String @unique
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
 }
-
-

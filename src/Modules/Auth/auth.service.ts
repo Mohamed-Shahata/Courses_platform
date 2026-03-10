@@ -16,12 +16,11 @@ export class AuthService {
     private prisma: DataBaseService,
     private config: ConfigService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   public async register(dto: RegisterDTO) {
     const { name, email, password, business_name, currency, webhook_url } = dto;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -33,7 +32,6 @@ export class AuthService {
     const api_secret_hash = await this.generateApiSecretHash();
 
     const verificationToken = this.generateverificationToken();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const Nuser = await this.prisma.user.create({
       data: {
         name,
@@ -47,10 +45,8 @@ export class AuthService {
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await this.prisma.emailVerification.create({
       data: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         userId: Nuser.id,
         token: verificationToken,
       },
@@ -65,7 +61,6 @@ export class AuthService {
   }
 
   public async verify_email(token: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const record = await this.prisma.emailVerification.findUnique({
       where: {
         token,
@@ -77,16 +72,12 @@ export class AuthService {
 
     if (!record) throw new BadRequestException('Invalid token');
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await this.prisma.user.update({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       where: { id: record.userId },
       data: { isVerified: true },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await this.prisma.emailVerification.delete({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       where: { token: record.token },
     });
 
