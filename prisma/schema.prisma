@@ -37,9 +37,20 @@ model User {
   status AccountStatus @default(PENDING_VERIFICATION)
 
   isVerified Boolean @default(false)
-  verificationToken String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  EmailVerification EmailVerification[]
 }
+
+model  EmailVerification {
+  id Int @default(autoincrement())
+  userId Int
+  token String @unique
+  User User @relation(fields: [userId] , references: [id] ,onDelete: Cascade)
+
+  @@index([token])
+}
+
 

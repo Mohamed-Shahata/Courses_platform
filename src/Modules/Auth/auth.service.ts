@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { DataBaseService } from '../DB/database.service';
@@ -29,8 +33,8 @@ export class AuthService {
     const api_secret_hash = await this.generateApiSecretHash();
 
     const verificationToken = this.generateverificationToken();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    await this.prisma.user.create({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const Nuser = await this.prisma.user.create({
       data: {
         name,
         email,
@@ -40,16 +44,53 @@ export class AuthService {
         business_name,
         currency,
         webhook_url,
-        verificationToken,
       },
     });
-    const link = `${this.config.get<string>('DOMAIN')}/api/auth/verify-email/${verificationToken}`;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    await this.prisma.emailVerification.create({
+      data: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        userId: Nuser.id,
+        token: verificationToken,
+      },
+    });
+    const link = `${this.config.get<string>('DOMAIN')}/api/auth/verify-email?token=${verificationToken}`;
 
     await this.mailService.sendVerifyEmail(email, link);
 
     return {
       message: 'Verification email sent successfully. Please check your inbox.',
     };
+  }
+
+  public async verify_email(token: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const record = await this.prisma.emailVerification.findUnique({
+      where: {
+        token,
+      },
+      include: {
+        User: true,
+      },
+    });
+
+    if (!record) throw new BadRequestException('Invalid token');
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    await this.prisma.user.update({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      where: { id: record.userId },
+      data: { isVerified: true },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    await this.prisma.emailVerification.delete({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      where: { token: record.token },
+    });
+
+    return { message: 'Email verified successfully' };
   }
 
   private generateApiKey() {
