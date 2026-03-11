@@ -35,6 +35,8 @@ model User {
   currency       String
   webhook_url    String?
 
+  refreshToken String?
+
   status AccountStatus @default(PENDING_VERIFICATION)
 
   isVerified Boolean @default(false)
