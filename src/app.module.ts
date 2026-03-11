@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DataBaseModule } from './Modules/DB/database.module';
 import { AuthModule } from './Modules/Auth/auth.module';
-import { MailModule } from './Modules/Mail/mail.module';
+import { MailModule } from './shared/mail/mail.module';
 
 @Module({
   imports: [
@@ -14,4 +14,4 @@ import { MailModule } from './Modules/Mail/mail.module';
     }),
   ],
 })
-export class AppModule {}
+export class AppModule { }

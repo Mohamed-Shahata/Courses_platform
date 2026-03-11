@@ -6,7 +6,6 @@ import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 import { MailService } from './mail.service';
 @Module({
   imports: [
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     MailerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
@@ -21,7 +20,6 @@ import { MailService } from './mail.service';
           },
           template: {
             dir: join(__dirname, 'templates'),
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
             adapter: new EjsAdapter({ inlineCssEnabled: true }),
           },
         };
@@ -31,4 +29,4 @@ import { MailService } from './mail.service';
   providers: [MailService],
   exports: [MailService],
 })
-export class MailModule {}
+export class MailModule { }
