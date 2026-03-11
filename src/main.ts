@@ -1,13 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api');
+  // base url
+  app.setGlobalPrefix('api/v1');
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  // handling response
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+
   app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 3000);

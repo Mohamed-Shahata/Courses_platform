@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DataBaseModule } from '../DB/database.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { MailModule } from '../Mail/mail.module';
+import { MailModule } from '../../shared/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
@@ -29,4 +29,4 @@ import { StringValue } from 'ms';
   controllers: [AuthController],
   providers: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

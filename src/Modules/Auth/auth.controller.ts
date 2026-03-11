@@ -12,6 +12,10 @@ import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
 import { LoginDTO } from './dto/login.dto';
 import { Response, Request } from 'express';
+import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
+import { ConfigService } from '@nestjs/config';
+import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
+import { AUTH_MESSAGES } from 'src/shared/constants/messages';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -20,20 +24,23 @@ interface RequestWithCookies extends Request {
 }
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private config: ConfigService,) { }
 
+  // POST => ~/auth/register
   @Post('register')
-  public async register(@Body() body: RegisterDTO) {
-    return await this.authService.register(body);
+  public register(@Body() body: RegisterDTO) {
+    return this.authService.register(body);
   }
 
+  // POST => ~/auth/verify-email
   @Get('verify-email')
-  public async verify_email(@Query('token') token: string) {
-    if (!token) throw new BadRequestException('no token provider');
+  public verify_email(@Query('token') token: string) {
+    if (!token) throw new BadRequestException(AUTH_MESSAGES.NO_TOKEN_PROVIDER);
 
-    return await this.authService.verify_email(token);
+    return this.authService.verify_email(token);
   }
 
+  // POST => ~/auth/login
   @Post('login')
   public async login(
     @Res({ passthrough: true }) res: Response,
@@ -42,20 +49,21 @@ export class AuthController {
     const { message, accessToken, refreshToken } =
       await this.authService.login(body);
 
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie(REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
-      secure: true,
+      secure: this.config.get<string>("NODE_ENV") == PRODUCTION ? true : false,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: daysToMilliseconds(7),
     });
 
     return { message, accessToken };
   }
 
-  public async getAccessToken(@Req() req: RequestWithCookies) {
+  // not: why this here
+  public getAccessToken(@Req() req: RequestWithCookies) {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) throw new BadRequestException('no refresh token ');
+    if (!refreshToken) throw new BadRequestException(AUTH_MESSAGES.NO_REFRESH_TOKEN);
 
-    return await this.authService.getAccessToken(refreshToken);
+    return this.authService.getAccessToken(refreshToken);
   }
 }
