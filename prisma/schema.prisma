@@ -44,14 +44,15 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  EmailVerification EmailVerification[]
+  EmailVerification EmailVerification?
 }
 
 model EmailVerification {
-  id     Int    @default(autoincrement())
-  userId Int
+  id     Int  @id  @default(autoincrement())
+  userId Int @unique
   token  String @unique
-  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime 
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
 
   @@index([token])
 }

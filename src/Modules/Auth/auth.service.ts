@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { DataBaseService } from '../DB/database.service';
 import { RegisterDTO } from './dto/register.dto';
@@ -14,7 +13,13 @@ import { JwtService } from '@nestjs/jwt';
 import { StringValue } from 'ms';
 import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
-import { generateApiKey, generateApiSecretHash, generateverificationToken } from 'src/shared/utils/generate.util';
+import {
+  generateApiKey,
+  generateApiSecretHash,
+  generateverificationToken,
+} from 'src/shared/utils/generate.util';
+import { resendEmailVerification } from './dto/resendEmailverification.dto';
+import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +28,7 @@ export class AuthService {
     private config: ConfigService,
     private mailService: MailService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   public async register(dto: RegisterDTO) {
     const { name, email, password, business_name, currency, webhook_url } = dto;
@@ -56,9 +61,10 @@ export class AuthService {
       data: {
         userId: Nuser.id,
         token: verificationToken,
+        expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
       },
     });
-    const link = `${this.config.get<string>('DOMAIN')}/auth/verify-email?token=${verificationToken}`;
+    const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/verify-email?token=${verificationToken}`;
 
     await this.mailService.sendVerifyEmail(email, link);
 
@@ -78,6 +84,8 @@ export class AuthService {
     });
 
     if (!record) throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
+    if (record.expiresAt < new Date())
+      throw new BadRequestException(AUTH_MESSAGES.TOKEN_EXPORED);
 
     await this.prisma.user.update({
       where: { id: record.userId },
@@ -97,15 +105,15 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
-    if (!user)
-      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     if (!user.isVerified)
       throw new BadRequestException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
-    if (!isMatch) throw new BadRequestException(AUTH_MESSAGES.INCORRECT_PASSWORD);
+    if (!isMatch)
+      throw new BadRequestException(AUTH_MESSAGES.INCORRECT_PASSWORD);
 
     const payload: JwtPayloadType = { id: user.id };
     const accessToken = await this.jwtService.signAsync(payload);
@@ -141,10 +149,50 @@ export class AuthService {
       throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
 
     const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isMatch) throw new BadRequestException(AUTH_MESSAGES.INVALID_REFRESH_TOKEN);
+    if (!isMatch)
+      throw new BadRequestException(AUTH_MESSAGES.INVALID_REFRESH_TOKEN);
 
     const accessToken = await this.jwtService.signAsync({ id: user.id });
 
-    return { accessToken };
+    return { data: { accessToken } };
+  }
+
+  public async resendEmailVerification(dto: resendEmailVerification) {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    if (user.isVerified)
+      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_VERIFIED);
+
+    const emailVerify = await this.prisma.emailVerification.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (emailVerify) {
+      await this.prisma.emailVerification.delete({
+        where: { id: emailVerify.id },
+      });
+    }
+
+    const verificationToken = generateverificationToken();
+
+    await this.prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+      },
+    });
+    const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/verify-email?token=${verificationToken}`;
+
+    await this.mailService.sendVerifyEmail(email, link);
+
+    return {
+      message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT,
+    };
   }
 }
