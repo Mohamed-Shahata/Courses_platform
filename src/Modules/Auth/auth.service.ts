@@ -9,6 +9,10 @@ import { DataBaseService } from '../DB/database.service';
 import { RegisterDTO } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../Mail/mail.service';
+import { LoginDTO } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { StringValue } from 'ms';
+import { JwtPayloadType } from 'src/utils/jwtPayloadType';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +20,8 @@ export class AuthService {
     private prisma: DataBaseService,
     private config: ConfigService,
     private mailService: MailService,
-  ) { }
+    private jwtService: JwtService,
+  ) {}
 
   public async register(dto: RegisterDTO) {
     const { name, email, password, business_name, currency, webhook_url } = dto;
@@ -82,6 +87,63 @@ export class AuthService {
     });
 
     return { message: 'Email verified successfully' };
+  }
+
+  public async login(dto: LoginDTO) {
+    const { email, password } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user)
+      throw new BadRequestException('No account found with this email');
+
+    if (!user.isVerified)
+      throw new BadRequestException('this email not verify ,check your email');
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!isMatch) throw new BadRequestException('Incorrect password');
+
+    const payload: JwtPayloadType = { id: user.id };
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.config.get<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as StringValue,
+    });
+
+    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: Hrefresh },
+    });
+
+    return { message: 'login successful', accessToken, refreshToken };
+  }
+
+  public async getAccessToken(refreshToken: string) {
+    const payload: JwtPayloadType = await this.jwtService.verifyAsync(
+      refreshToken,
+      {
+        secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      },
+    );
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.id },
+    });
+    if (!user || !user.refreshToken)
+      throw new BadRequestException('Access denied');
+
+    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!isMatch) throw new BadRequestException('Invalid refresh token');
+
+    const accessToken = await this.jwtService.signAsync({ id: user.id });
+
+    return { accessToken };
   }
 
   private generateApiKey() {
