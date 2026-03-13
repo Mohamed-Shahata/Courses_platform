@@ -201,6 +201,18 @@ export class AuthService {
     };
   }
 
+  public async logout(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) throw new BadRequestException('user not found');
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: '' },
+    });
+
+    return { message: AUTH_MESSAGES.USER_LOGOUT };
   public async forgotPassword (dto:ForgotPasswordDto){
     const { email } = dto;
 
