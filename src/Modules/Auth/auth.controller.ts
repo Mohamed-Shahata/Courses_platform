@@ -7,6 +7,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
@@ -17,6 +18,9 @@ import { ConfigService } from '@nestjs/config';
 import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
 import { resendEmailVerification } from './dto/resendEmailverification.dto';
+import { AuthGuard } from './guards/auth.guard';
+import { CurrentUser } from './decorator/current-user.decorator';
+import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -76,5 +80,23 @@ export class AuthController {
   @Post('resendEmail')
   public resendEmailVerification(@Body() body: resendEmailVerification) {
     return this.authService.resendEmailVerification(body);
+  }
+
+  //Get ~/auth/logout
+  @Get('logout')
+  @UseGuards(AuthGuard)
+  public async logout(
+    @CurrentUser() user: JwtPayloadType,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const response = await this.authService.logout(user.id);
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: this.config.get<string>('NODE_ENV') == PRODUCTION ? true : false,
+      sameSite: 'strict',
+    });
+
+    return response;
   }
 }

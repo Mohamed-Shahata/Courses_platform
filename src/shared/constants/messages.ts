@@ -19,4 +19,6 @@ export const AUTH_MESSAGES = {
 
   ACCOUNT_VERIFIED: 'This email is already verified. You can log in now.',
   TOKEN_EXPORED: 'Token expired',
+
+  USER_LOGOUT: 'Logout successful',
 };
