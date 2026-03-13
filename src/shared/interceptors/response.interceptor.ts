@@ -1,9 +1,9 @@
 import {
-    CallHandler,
-    ExecutionContext,
-    Injectable,
-    NestInterceptor,
-    HttpStatus,
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+  HttpStatus,
 } from '@nestjs/common';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
@@ -33,25 +33,28 @@ import { Observable } from 'rxjs';
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {
+  /**
+   * Intercepts the outgoing response and transforms it into
+   * a unified JSON structure.
+   *
+   * @param context - Execution context provided by NestJS
+   * @param next - CallHandler to proceed with request execution
+   * @returns Observable<any> - an Observable emitting the transformed response
+   */
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response = context.switchToHttp().getResponse();
 
-    /**
-     * Intercepts the outgoing response and transforms it into
-     * a unified JSON structure.
-     *
-     * @param context - Execution context provided by NestJS
-     * @param next - CallHandler to proceed with request execution
-     * @returns Observable<any> - an Observable emitting the transformed response
-     */
-    intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-        const response = context.switchToHttp().getResponse();
-
-        return next.handle().pipe(
-            map((data) => ({
-                success: true,
-                status: response.statusCode || HttpStatus.OK,
-                message: data?.message || null,
-                data: data?.data || null,
-            })),
-        );
-    }
+    return next.handle().pipe(
+      map((data) => ({
+        success: true,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        status: response.statusCode || HttpStatus.OK,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        message: data?.message || null,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        data: data?.data || null,
+      })),
+    );
+  }
 }

@@ -1,22 +1,22 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
 export const generateApiKey = () => {
-    const apiKey = 'pk_live_' + randomBytes(24).toString('hex');
+  const apiKey = 'pk_live_' + randomBytes(24).toString('hex');
 
-    return apiKey;
-}
+  return apiKey;
+};
 
 export const generateverificationToken = () => {
-    const verificationToken = randomBytes(32).toString('hex');
+  const verificationToken = randomBytes(32).toString('hex');
 
-    return verificationToken;
-}
+  return verificationToken;
+};
 
 export const generateApiSecretHash = async () => {
-    const apiSecret = 'sk_live_' + randomBytes(48).toString('hex');
+  const apiSecret = 'sk_live_' + randomBytes(48).toString('hex');
 
-    const apiSecretHash = await bcrypt.hash(apiSecret, 10);
+  const apiSecretHash = await bcrypt.hash(apiSecret, 10);
 
-    return apiSecretHash;
-}
+  return apiSecretHash;
+};

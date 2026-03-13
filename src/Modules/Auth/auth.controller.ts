@@ -16,6 +16,7 @@ import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
 import { ConfigService } from '@nestjs/config';
 import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
+import { resendEmailVerification } from './dto/resendEmailverification.dto';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -24,7 +25,10 @@ interface RequestWithCookies extends Request {
 }
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private config: ConfigService,) { }
+  constructor(
+    private authService: AuthService,
+    private config: ConfigService,
+  ) {}
 
   // POST => ~/auth/register
   @Post('register')
@@ -51,19 +55,26 @@ export class AuthController {
 
     res.cookie(REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
-      secure: this.config.get<string>("NODE_ENV") == PRODUCTION ? true : false,
+      secure: this.config.get<string>('NODE_ENV') == PRODUCTION ? true : false,
       sameSite: 'strict',
       maxAge: daysToMilliseconds(7),
     });
 
-    return { message, accessToken };
+    return { message, data: { accessToken } };
   }
 
   // not: why this here
   public getAccessToken(@Req() req: RequestWithCookies) {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) throw new BadRequestException(AUTH_MESSAGES.NO_REFRESH_TOKEN);
+    if (!refreshToken)
+      throw new BadRequestException(AUTH_MESSAGES.NO_REFRESH_TOKEN);
 
     return this.authService.getAccessToken(refreshToken);
+  }
+
+  // POST ~/auth/resendEmail
+  @Post('resendEmail')
+  public resendEmailVerification(@Body() body: resendEmailVerification) {
+    return this.authService.resendEmailVerification(body);
   }
 }
