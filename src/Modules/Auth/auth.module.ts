@@ -6,6 +6,7 @@ import { MailModule } from '../../shared/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import { StringValue } from 'ms';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService,JwtAuthGuard],
 })
 export class AuthModule { }

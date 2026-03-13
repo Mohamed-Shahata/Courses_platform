@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Query,
   Req,
@@ -21,6 +22,12 @@ import { resendEmailVerification } from './dto/resendEmailverification.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorator/current-user.decorator';
 import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
+import { ResendEmailVerification } from './dto/resendEmailverification.dto';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { ResetPasswordDto } from './dto/resetPassword.dto';
+import { ChangePasswordDto } from './dto/changePassword.dto';
+import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -67,7 +74,8 @@ export class AuthController {
     return { message, data: { accessToken } };
   }
 
-  // not: why this here
+  // POST ~/auth/access-token
+  @Post('access-token')
   public getAccessToken(@Req() req: RequestWithCookies) {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken)
@@ -76,9 +84,9 @@ export class AuthController {
     return this.authService.getAccessToken(refreshToken);
   }
 
-  // POST ~/auth/resendEmail
-  @Post('resendEmail')
-  public resendEmailVerification(@Body() body: resendEmailVerification) {
+  // POST ~/auth/resend-email
+  @Post('resend-email')
+  public resendEmailVerification(@Body() body: ResendEmailVerification) {
     return this.authService.resendEmailVerification(body);
   }
 
@@ -98,5 +106,25 @@ export class AuthController {
     });
 
     return response;
+  // POST ~/auth/password/forgot
+  @Post('password/forgot')
+  public forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body);
+  }
+
+  // POST ~/auth/password/reset
+  @Post('password/reset')
+  public ResetPassword(@Body() body: ResetPasswordDto, @Query('token') token:string) {
+    return this.authService.resetPassword(body, token);
+  }
+
+  // PATCH ~/auth/password/change
+  @UseGuards(JwtAuthGuard)
+  @Patch('password/change')
+  changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(userId, dto);
   }
 }

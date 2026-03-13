@@ -20,7 +20,7 @@ enum AccountStatus {
 }
 
 model User {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
 
   name          String
   email         String @unique
@@ -45,14 +45,26 @@ model User {
   updated_at DateTime @updatedAt
 
   EmailVerification EmailVerification?
+
+  passwordResets PasswordReset[]
 }
 
 model EmailVerification {
-  id     Int  @id  @default(autoincrement())
-  userId Int @unique
-  token  String @unique
-  expiresAt DateTime 
-  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

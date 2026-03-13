@@ -16,10 +16,13 @@ import { AUTH_MESSAGES } from 'src/shared/constants/messages';
 import {
   generateApiKey,
   generateApiSecretHash,
-  generateverificationToken,
+  generateToken,
 } from 'src/shared/utils/generate.util';
-import { resendEmailVerification } from './dto/resendEmailverification.dto';
+import { ResendEmailVerification } from './dto/resendEmailverification.dto';
 import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { ResetPasswordDto } from './dto/resetPassword.dto';
+import { ChangePasswordDto } from './dto/changePassword.dto';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +46,7 @@ export class AuthService {
 
     const api_secret_hash = await generateApiSecretHash();
 
-    const verificationToken = generateverificationToken();
+    const verificationToken = generateToken();
     const Nuser = await this.prisma.user.create({
       data: {
         name,
@@ -64,7 +67,9 @@ export class AuthService {
         expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
       },
     });
-    const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/verify-email?token=${verificationToken}`;
+    const link = `${this.config.get<string>('DOMAIN')}/auth/verify-email?token=${verificationToken}`;
+
+    console.log(email)
 
     await this.mailService.sendVerifyEmail(email, link);
 
@@ -113,9 +118,9 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch)
-      throw new BadRequestException(AUTH_MESSAGES.INCORRECT_PASSWORD);
+      throw new BadRequestException(AUTH_MESSAGES.EMAIL_OR_PASSWORD_IS_WRONG);
 
-    const payload: JwtPayloadType = { id: user.id };
+    const payload: JwtPayloadType = { id: user.id};
     const accessToken = await this.jwtService.signAsync(payload);
 
     const refreshToken = await this.jwtService.signAsync(payload, {
@@ -157,7 +162,7 @@ export class AuthService {
     return { data: { accessToken } };
   }
 
-  public async resendEmailVerification(dto: resendEmailVerification) {
+  public async resendEmailVerification(dto: ResendEmailVerification) {
     const { email } = dto;
 
     const user = await this.prisma.user.findUnique({
@@ -178,7 +183,7 @@ export class AuthService {
       });
     }
 
-    const verificationToken = generateverificationToken();
+    const verificationToken = generateToken();
 
     await this.prisma.emailVerification.create({
       data: {
@@ -208,5 +213,94 @@ export class AuthService {
     });
 
     return { message: AUTH_MESSAGES.USER_LOGOUT };
+  public async forgotPassword (dto:ForgotPasswordDto){
+    const { email } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    const token = generateToken();
+
+    await this.prisma.passwordReset.create({
+      data:{
+        userId:user.id,
+        token,
+        expiresAt: new Date(Date.now() + mintesToMilliseconds(15))
+      }
+    })
+
+    console.log(this.config.get<string>("DOMAIN"))
+    const resetLink = `${this.config.get<string>("DOMAIN")}/auth/password/reset?token=${token}`
+
+    await this.mailService.resetPassword(
+      user.email,
+      resetLink
+    );
+
+    return {message:AUTH_MESSAGES.WE_HAVE_SENT_A_PASSWORD_CHANGE_LINK_TO_YOUR_EMAIL}
+  }
+
+  public async resetPassword (dto:ResetPasswordDto, token:string){
+    const { confirmNewPassword,newPassword } = dto;
+
+    const reset = await this.prisma.passwordReset.findUnique({
+      where:{token}
+    })
+
+      if (!reset || reset.expiresAt < new Date()) {
+    throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
+  }
+
+  if(newPassword !== confirmNewPassword){
+    throw new BadRequestException(AUTH_MESSAGES.NEW_PASSWORD_AND_CONFIRM_PASSWORD_NOT_MATCHING)
+  }
+
+  const hash = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+    where: { id: reset.userId },
+    data: { password_hash: hash },
+  });
+
+    await this.prisma.passwordReset.delete({
+    where: { id: reset.id },
+  });
+
+  return {message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL}
+
+  }
+
+  public async changePassword(userId:string, dto:ChangePasswordDto){
+    const {confirmNewPassword,currentPassword,newPassword} = dto;
+
+      const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+
+  if(!user){
+    throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+
+  if (!isMatch) {
+    throw new BadRequestException(AUTH_MESSAGES.CURRENT_PASSWORD_INCORRECT);
+  }
+
+  if(newPassword !== confirmNewPassword){
+    throw new BadRequestException(AUTH_MESSAGES.NEW_PASSWORD_AND_CONFIRM_PASSWORD_NOT_MATCHING);
+  }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+
+  await this.prisma.user.update({
+    where: { id: userId },
+    data: { password_hash: hash },
+  });
+
+  return{message:AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL}
   }
 }

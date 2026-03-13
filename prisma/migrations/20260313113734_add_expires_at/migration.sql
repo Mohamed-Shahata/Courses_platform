@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "EmailVerification" ALTER COLUMN "expiresAt" SET DEFAULT CURRENT_TIMESTAMP;
