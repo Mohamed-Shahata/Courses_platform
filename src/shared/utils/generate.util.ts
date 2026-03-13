@@ -7,7 +7,7 @@ export const generateApiKey = () => {
   return apiKey;
 };
 
-export const generateverificationToken = () => {
+export const generateToken = () => {
   const verificationToken = randomBytes(32).toString('hex');
 
   return verificationToken;
