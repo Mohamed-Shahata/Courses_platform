@@ -201,7 +201,7 @@ export class AuthService {
     };
   }
 
-  public async logout(id: number) {
+  public async logout(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -213,6 +213,7 @@ export class AuthService {
     });
 
     return { message: AUTH_MESSAGES.USER_LOGOUT };
+  }
   public async forgotPassword (dto:ForgotPasswordDto){
     const { email } = dto;
 

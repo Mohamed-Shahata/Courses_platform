@@ -14,14 +14,11 @@ import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
 import { LoginDTO } from './dto/login.dto';
 import { Response, Request } from 'express';
-import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
+import {  PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
 import { ConfigService } from '@nestjs/config';
 import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
-import { resendEmailVerification } from './dto/resendEmailverification.dto';
 import { AuthGuard } from './guards/auth.guard';
-import { CurrentUser } from './decorator/current-user.decorator';
-import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
 import { ResendEmailVerification } from './dto/resendEmailverification.dto';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
@@ -94,18 +91,20 @@ export class AuthController {
   @Get('logout')
   @UseGuards(AuthGuard)
   public async logout(
-    @CurrentUser() user: JwtPayloadType,
+    @CurrentUser() userId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const response = await this.authService.logout(user.id);
+    const response = await this.authService.logout(userId);
 
-    res.clearCookie('refreshToken', {
+    res.clearCookie(REFRESH_TOKEN, {
       httpOnly: true,
       secure: this.config.get<string>('NODE_ENV') == PRODUCTION ? true : false,
       sameSite: 'strict',
     });
 
     return response;
+  }
+
   // POST ~/auth/password/forgot
   @Post('password/forgot')
   public forgotPassword(@Body() body: ForgotPasswordDto) {
