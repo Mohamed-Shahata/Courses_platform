@@ -12,7 +12,6 @@ async function bootstrap() {
   // handling response
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-
   app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 3000);

@@ -14,11 +14,10 @@ import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
 import { LoginDTO } from './dto/login.dto';
 import { Response, Request } from 'express';
-import {  PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
+import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
 import { ConfigService } from '@nestjs/config';
 import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
-import { AuthGuard } from './guards/auth.guard';
 import { ResendEmailVerification } from './dto/resendEmailverification.dto';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
@@ -89,9 +88,9 @@ export class AuthController {
 
   //Get ~/auth/logout
   @Get('logout')
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   public async logout(
-    @CurrentUser() userId: string,
+    @CurrentUser('id') userId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
     const response = await this.authService.logout(userId);
@@ -113,7 +112,10 @@ export class AuthController {
 
   // POST ~/auth/password/reset
   @Post('password/reset')
-  public ResetPassword(@Body() body: ResetPasswordDto, @Query('token') token:string) {
+  public ResetPassword(
+    @Body() body: ResetPasswordDto,
+    @Query('token') token: string,
+  ) {
     return this.authService.resetPassword(body, token);
   }
 
