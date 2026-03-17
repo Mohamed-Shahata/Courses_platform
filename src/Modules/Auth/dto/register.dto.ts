@@ -1,22 +1,23 @@
 import { IsEmail, IsString, Length } from 'class-validator';
-
+import { ROLE } from 'generated/prisma/enums';
 export class RegisterDTO {
   @IsString()
-  name: string;
+  first_name: string;
+
+  @IsString()
+  last_name: string;
 
   @IsEmail()
   email: string;
-
-  @IsString()
-  business_name: string;
 
   @IsString()
   @Length(8, 15)
   password: string;
 
   @IsString()
-  currency: string;
+  @Length(11)
+  phone: string;
 
   @IsString()
-  webhook_url: string;
+  role: ROLE;
 }

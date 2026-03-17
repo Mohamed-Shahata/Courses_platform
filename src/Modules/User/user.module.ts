@@ -4,10 +4,11 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 
 @Module({
   controllers: [UserController],
-  providers: [UserService, JwtAuthGuard],
+  providers: [UserService, JwtAuthGuard, AuthRoleGuard],
   imports: [DataBaseModule, JwtModule],
 })
 export class UserModule {}

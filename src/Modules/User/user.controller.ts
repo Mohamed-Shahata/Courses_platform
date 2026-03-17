@@ -1,25 +1,19 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { updateWebhookDTO } from './dto/updateWebhook.dto';
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
+import { Roles } from 'src/shared/decorators/user-role.decorator';
+import { ROLE } from 'generated/prisma/enums';
+import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
 
-@Controller('merchant')
+@Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  public getProfile(@CurrentUser('id') userId: string) {
-    return this.userService.getProfile(userId);
-  }
-
-  @Patch('webhook_url')
-  @UseGuards(JwtAuthGuard)
-  public updateWebhook(
-    @CurrentUser('id') userId: string,
-    @Body() body: updateWebhookDTO,
-  ) {
-    return this.userService.updateWebhood(userId, body);
+  @Roles(ROLE.ADMIN, ROLE.INSTRUCTOR, ROLE.STUDENT)
+  @UseGuards(AuthRoleGuard)
+  public getProfile(@CurrentUser() payload: JwtPayloadType) {
+    return this.userService.getProfile(payload.id);
   }
 }

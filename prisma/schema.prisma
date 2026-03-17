@@ -13,31 +13,25 @@ datasource db {
   provider = "postgresql"
 }
 
-enum AccountStatus {
-  ACTIVE
-  SUSPENDED
-  PENDING_VERIFICATION
+enum ROLE {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
 }
 
 model User {
   id String @id @default(uuid())
 
-  name          String
+  first_name          String
+  last_name          String
   email         String @unique
-  business_name String
 
   password_hash String
-
-  api_key         String @unique
-  api_secret_hash String
-
-  wallet_balance Decimal @default(0)
-  currency       String
-  webhook_url    String?
+  phone String
 
   refreshToken String?
 
-  status AccountStatus @default(PENDING_VERIFICATION)
+  role ROLE @default(STUDENT)
 
   isVerified Boolean @default(false)
 

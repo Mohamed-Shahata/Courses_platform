@@ -34,8 +34,7 @@ export const AUTH_MESSAGES = {
   TOKEN_EXPORED: 'Token expired',
 
   USER_LOGOUT: 'Logout successful',
-};
-
-export const USER_MESSAGE = {
-  CHANGE_WEBHOOD_URL_SUCCESSFUL: 'Change webhood_url successful',
+  NO_ROLE_DEFINED: 'Access denied: no roles defined',
+  NO_PERMISSION:
+    'Access denied: you do not have permission to access this resource',
 };
