@@ -13,11 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { StringValue } from 'ms';
 import { JwtPayloadType } from 'src/shared/types/jwtPayloadType';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
-import {
-  generateApiKey,
-  generateApiSecretHash,
-  generateToken,
-} from 'src/shared/utils/generate.util';
+import { generateToken } from 'src/shared/utils/generate.util';
 import { ResendEmailVerification } from './dto/resendEmailverification.dto';
 import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
@@ -34,7 +30,7 @@ export class AuthService {
   ) {}
 
   public async register(dto: RegisterDTO) {
-    const { name, email, password, business_name, currency, webhook_url } = dto;
+    const { first_name, last_name, email, password, role, phone } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -42,21 +38,16 @@ export class AuthService {
     if (user) throw new NotFoundException(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS);
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const api_key = generateApiKey();
-
-    const api_secret_hash = await generateApiSecretHash();
 
     const verificationToken = generateToken();
     const Nuser = await this.prisma.user.create({
       data: {
-        name,
+        first_name,
+        last_name,
         email,
         password_hash: passwordHash,
-        api_key,
-        api_secret_hash,
-        business_name,
-        currency,
-        webhook_url,
+        role,
+        phone,
       },
     });
 
@@ -120,7 +111,7 @@ export class AuthService {
     if (!isMatch)
       throw new BadRequestException(AUTH_MESSAGES.EMAIL_OR_PASSWORD_IS_WRONG);
 
-    const payload: JwtPayloadType = { id: user.id };
+    const payload: JwtPayloadType = { id: user.id, role: user.role };
     const accessToken = await this.jwtService.signAsync(payload);
 
     const refreshToken = await this.jwtService.signAsync(payload, {
@@ -205,7 +196,8 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
-    if (!user) throw new BadRequestException('user not found');
+    if (!user || !user.refreshToken)
+      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     await this.prisma.user.update({
       where: { id: user.id },

@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -10,15 +11,28 @@ import { AUTH_MESSAGES } from '../constants/messages';
 import { ConfigService } from '@nestjs/config';
 import { AUTHORIZATION, BEARER, USER } from '../constants/variables';
 import { JwtPayloadType } from '../types/jwtPayloadType';
-
+import { ROLE } from 'generated/prisma/enums';
+import { Reflector } from '@nestjs/core';
+import { UserService } from 'src/Modules/User/user.service';
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
+export class AuthRoleGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
+    private reflector: Reflector,
+    private userService: UserService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const roles: ROLE = this.reflector.getAllAndOverride('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (!roles || roles.length === 0) {
+      throw new ForbiddenException(AUTH_MESSAGES.NO_ROLE_DEFINED);
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers[AUTHORIZATION];
 
@@ -31,6 +45,7 @@ export class JwtAuthGuard implements CanActivate {
     const [bearer, token] = authHeader.split(' ');
 
     if (bearer !== BEARER || !token) {
+      console.log(token);
       throw new UnauthorizedException(AUTH_MESSAGES.INVALID_TOKEN_FORMAT);
     }
 
@@ -38,11 +53,19 @@ export class JwtAuthGuard implements CanActivate {
       const payload: JwtPayloadType = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
       });
+      const { data } = await this.userService.findUser(payload.id);
+
+      if (!roles.includes(data.role)) {
+        throw new ForbiddenException(AUTH_MESSAGES.NO_PERMISSION);
+      }
 
       request[USER] = payload;
 
       return true;
-    } catch {
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
       throw new UnauthorizedException(AUTH_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
   }
