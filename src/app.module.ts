@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DataBaseModule } from './Modules/DB/database.module';
-import { AuthModule } from './Modules/Auth/auth.module';
+import { DataBaseModule } from './modules/db/database.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { MailModule } from './shared/mail/mail.module';
-import { UserModule } from './Modules/User/user.module';
-import { CourseModule } from './Modules/Courses/course.module';
-import { EnrollmentModule } from './Modules/enrollment/enrollment.module';
+import { UserModule } from './modules/user/user.module';
+import { CourseModule } from './modules/course/course.module';
+import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 
 @Module({
   imports: [
