@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { DataBaseService } from '../DB/database.service';
+import { DataBaseService } from '../db/database.service';
 import { RegisterDTO } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../../shared/mail/mail.service';

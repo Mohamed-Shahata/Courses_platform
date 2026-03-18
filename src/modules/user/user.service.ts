@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../DB/database.service';
+import { DataBaseService } from '../db/database.service';
 import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
-import { ROLE } from '@prisma/client';
+import { ROLE } from 'generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { DataBaseService } from '../DB/database.service';
+import { DataBaseService } from '../db/database.service';
 import {
   COURSE_MESSAGE,
   ENROLLMENT_MESSAGE,
