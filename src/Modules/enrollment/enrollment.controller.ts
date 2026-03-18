@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, Post } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { ROLE } from 'generated/prisma/enums';
@@ -9,7 +9,7 @@ import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 export class EnrollmentController {
   constructor(private enrollmentService: EnrollmentService) {}
 
-  @Get('/:courseId')
+  @Post('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
   public async enrollCourse(
