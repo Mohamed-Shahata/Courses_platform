@@ -9,20 +9,22 @@ import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 export class EnrollmentController {
   constructor(private enrollmentService: EnrollmentService) {}
 
+  //Post ~/enroll/:courseId
   @Post('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
-  public async enrollCourse(
+  public enrollCourse(
     @CurrentUser('id') id: string,
     @Param('courseId') courseId: string,
   ) {
-    return await this.enrollmentService.enrollCourse(courseId, id);
+    return this.enrollmentService.enrollCourse(courseId, id);
   }
 
+  //Get ~/enroll/:courseId
   @Get('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
-  public async AllEnrollByUser(@CurrentUser('id') id: string) {
-    return await this.enrollmentService.AllEnrollByStudent(id);
+  public AllEnrollByUser(@CurrentUser('id') id: string) {
+    return this.enrollmentService.AllEnrollByStudent(id);
   }
 }

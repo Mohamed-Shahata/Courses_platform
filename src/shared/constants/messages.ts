@@ -41,6 +41,8 @@ export const AUTH_MESSAGES = {
 
 export const USER_MESSAGES = {
   NOT_FOUND_ACCOUNT: 'No Account found',
+  NOT_FOUND_STUDENT: 'No Found Student',
+  NOT_FOUND_INST: 'No Found Instructor',
 };
 
 export const COURSE_MESSAGE = {

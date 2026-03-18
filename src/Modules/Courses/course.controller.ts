@@ -21,54 +21,59 @@ import { UpdateCourseDTO } from './dto/updateCourse.dto';
 export class CourseController {
   constructor(private courseService: CourseService) {}
 
+  //Post ~/course/create
   @Post('create')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async createCourse(
+  public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
   ) {
-    return await this.courseService.createCourse(body, id);
+    return this.courseService.createCourse(body, id);
   }
 
+  //Get ~/course/all
   @Get('all')
   @UseGuards(JwtAuthGuard)
-  public async getAllCourses() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return await this.courseService.getAllCourses();
+  public getAllCourses() {
+    return this.courseService.getAllCourses();
   }
 
+  //Get ~/course/inst
   @Get('inst')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async getAllCoursesByInst(@CurrentUser('id') id: string) {
-    return await this.courseService.getAllCoursesByInst(id);
+  public getAllCoursesByInst(@CurrentUser('id') id: string) {
+    return this.courseService.getAllCoursesByInst(id);
   }
 
+  //Get ~/course/:id
   @Get('/:id')
   @UseGuards(JwtAuthGuard)
-  public async getCourseById(@Param('id') id: string) {
-    return await this.courseService.getCourseById(id);
+  public getCourseById(@Param('id') id: string) {
+    return this.courseService.getCourseById(id);
   }
 
+  //Patch ~/course/update/:id
   @Patch('update/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async updateCourse(
+  public updateCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
     @Body() body: UpdateCourseDTO,
   ) {
-    return await this.courseService.updateCourse(body, id, instId);
+    return this.courseService.updateCourse(body, id, instId);
   }
 
+  //Delete ~/course/delete/:id
   @Delete('delete/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async deleteCourse(
+  public deleteCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
   ) {
-    return await this.courseService.deleteCourse(id, instId);
+    return this.courseService.deleteCourse(id, instId);
   }
 }
