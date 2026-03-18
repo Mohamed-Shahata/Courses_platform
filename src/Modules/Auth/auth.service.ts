@@ -60,8 +60,6 @@ export class AuthService {
     });
     const link = `${this.config.get<string>('DOMAIN')}/auth/verify-email?token=${verificationToken}`;
 
-    console.log(email);
-
     await this.mailService.sendVerifyEmail(email, link);
 
     return {

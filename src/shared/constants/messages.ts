@@ -38,3 +38,16 @@ export const AUTH_MESSAGES = {
   NO_PERMISSION:
     'Access denied: you do not have permission to access this resource',
 };
+
+export const USER_MESSAGES = {
+  NOT_FOUND_ACCOUNT: 'No Account found',
+};
+
+export const COURSE_MESSAGE = {
+  DELETE_SUCCESSFUL: 'Course delete successful ',
+  NOT_FOUND_COURSE: 'Not Found Course',
+};
+
+export const ENROLLMENT_MESSAGE = {
+  ENROLL_ALREADY: 'Already enrolled',
+};

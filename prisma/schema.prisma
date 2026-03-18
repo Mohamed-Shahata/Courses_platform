@@ -19,6 +19,11 @@ enum ROLE {
   ADMIN
 }
 
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
 model User {
   id String @id @default(uuid())
 
@@ -41,6 +46,10 @@ model User {
   EmailVerification EmailVerification?
 
   passwordResets PasswordReset[]
+
+  enrollments Enrollment[]
+
+  taughtCourses Course[] @relation("InstructorCourses")
 }
 
 model EmailVerification {
@@ -61,4 +70,36 @@ model PasswordReset {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  videoURL    String
+  description String
+  price       Float
+  isFree      Boolean  @default(false)
+  level       CourseLevel
+  language    String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  instructorId  String
+  instructor    User     @relation("InstructorCourses", fields: [instructorId], references: [id])
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id        String @id @default(uuid())
+
+  studentId    String
+  courseId  String
+
+  student      User   @relation(fields: [studentId], references: [id])
+  course    Course @relation(fields: [courseId], references: [id])
+
+  enrolledAt DateTime @default(now())
+  @@unique([studentId, courseId])
 }
