@@ -1,0 +1,73 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { DataBaseService } from '../DB/database.service';
+import {
+  COURSE_MESSAGE,
+  ENROLLMENT_MESSAGE,
+  USER_MESSAGES,
+} from 'src/shared/constants/messages';
+
+export class EnrollmentService {
+  constructor(private prisma: DataBaseService) {}
+
+  public async enrollCourse(courseId: string, studentId: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) throw new NotFoundException(COURSE_MESSAGE.NOT_FOUND_COURSE);
+
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
+    if (!student) throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const existing = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId,
+          courseId,
+        },
+      },
+    });
+    if (existing)
+      throw new BadRequestException(ENROLLMENT_MESSAGE.ENROLL_ALREADY);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const enroll = await this.prisma.enrollment.create({
+      data: {
+        student: {
+          connect: {
+            id: studentId,
+          },
+        },
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return { enroll };
+  }
+
+  public async AllEnrollByStudent(studentId: string) {
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
+    if (!student) throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const coursesEnroll = await this.prisma.enrollment.findMany({
+      where: {
+        student,
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return { coursesEnroll };
+  }
+}

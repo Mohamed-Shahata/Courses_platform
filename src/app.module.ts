@@ -4,6 +4,8 @@ import { DataBaseModule } from './Modules/DB/database.module';
 import { AuthModule } from './Modules/Auth/auth.module';
 import { MailModule } from './shared/mail/mail.module';
 import { UserModule } from './Modules/User/user.module';
+import { CourseModule } from './Modules/Courses/course.module';
+import { EnrollmentModule } from './Modules/enrollment/enrollment.module';
 
 @Module({
   imports: [
@@ -11,6 +13,8 @@ import { UserModule } from './Modules/User/user.module';
     DataBaseModule,
     AuthModule,
     MailModule,
+    CourseModule,
+    EnrollmentModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
