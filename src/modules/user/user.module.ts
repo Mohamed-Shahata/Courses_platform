@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DataBaseModule } from '../DB/database.module';
+import { DataBaseModule } from '../db/database.module';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';

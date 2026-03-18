@@ -13,7 +13,7 @@ import { AUTHORIZATION, BEARER, USER } from '../constants/variables';
 import { JwtPayloadType } from '../types/jwtPayloadType';
 import { ROLE } from 'generated/prisma/enums';
 import { Reflector } from '@nestjs/core';
-import { UserService } from 'src/modules/User/user.service';
+import { UserService } from 'src/modules/user/user.service';
 @Injectable()
 export class AuthRoleGuard implements CanActivate {
   constructor(

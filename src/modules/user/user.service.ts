@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../DB/database.service';
+import { DataBaseService } from '../db/database.service';
 import { AUTH_MESSAGES } from 'src/shared/constants/messages';
 
 @Injectable()
