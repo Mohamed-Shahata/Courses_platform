@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, UseGuards, Patch } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
-import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
+import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { ROLE } from 'generated/prisma/enums';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { updateUserDTO } from './dto/updateUser.dto';
 
 @Controller('user')

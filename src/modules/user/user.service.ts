@@ -3,7 +3,6 @@ import { DataBaseService } from '../db/database.service';
 import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
 import { ROLE } from 'generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
-
 @Injectable()
 export class UserService {
   constructor(private prisma: DataBaseService) {}
