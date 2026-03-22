@@ -56,14 +56,12 @@ export class EnrollmentService {
     });
     if (!student) throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const coursesEnroll = await this.prisma.enrollment.findMany({
       where: {
         student,
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return { coursesEnroll };
   }
 }
