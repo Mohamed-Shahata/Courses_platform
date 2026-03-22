@@ -7,68 +7,91 @@ import {
   Param,
   Patch,
   Delete,
+  Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { ROLE } from 'generated/prisma/enums';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { CreateCourseDTO } from './dto/createCourse.dto';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
+import { CreateCourseDTO } from './dto/createCourse.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
 
 @Controller('course')
 export class CourseController {
   constructor(private courseService: CourseService) {}
 
-  @Post('create')
+  //Post ~/course/create/:categoryId
+  @Post('create/:categoryId')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async createCourse(
+  @UseInterceptors(FileInterceptor('thumbnail'))
+  public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
+    @Param('categoryId') categoryId: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return await this.courseService.createCourse(body, id);
+    return this.courseService.createCourse(body, id, categoryId, file.path);
   }
 
+  //Get ~/course/all
   @Get('all')
   @UseGuards(JwtAuthGuard)
-  public async getAllCourses() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return await this.courseService.getAllCourses();
+  public getAllCourses() {
+    return this.courseService.getAllCourses();
   }
 
+  //Get ~/course/inst
   @Get('inst')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async getAllCoursesByInst(@CurrentUser('id') id: string) {
-    return await this.courseService.getAllCoursesByInst(id);
+  public getAllCoursesByInst(@CurrentUser('id') id: string) {
+    return this.courseService.getAllCoursesByInst(id);
   }
 
+  //Get ~/course/:id
   @Get('/:id')
   @UseGuards(JwtAuthGuard)
-  public async getCourseById(@Param('id') id: string) {
-    return await this.courseService.getCourseById(id);
+  public getCourseById(@Param('id') id: string) {
+    return this.courseService.getCourseById(id);
   }
 
+  //Get ~/course/filter
+  @Get('filter')
+  @UseGuards(JwtAuthGuard)
+  public filterCourses(
+    @Query('category') category?: string,
+    @Query('tag') tag?: string,
+  ) {
+    return this.courseService.filterCourses(category, tag);
+  }
+
+  //Patch ~/course/update/:id
   @Patch('update/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async updateCourse(
+  public updateCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
     @Body() body: UpdateCourseDTO,
   ) {
-    return await this.courseService.updateCourse(body, id, instId);
+    return this.courseService.updateCourse(body, id, instId);
   }
 
+  //Delete ~/course/delete/:id
   @Delete('delete/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  public async deleteCourse(
+  public deleteCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
   ) {
-    return await this.courseService.deleteCourse(id, instId);
+    return this.courseService.deleteCourse(id, instId);
   }
 }

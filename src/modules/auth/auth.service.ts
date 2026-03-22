@@ -100,6 +100,8 @@ export class AuthService {
       where: { email },
     });
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+    if (user.isDelete)
+      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_DELETE);
 
     if (!user.isVerified)
       throw new BadRequestException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);

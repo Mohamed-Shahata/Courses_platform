@@ -9,30 +9,22 @@ import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 export class EnrollmentController {
   constructor(private enrollmentService: EnrollmentService) {}
 
-  // POST ~/enroll/:courseId/create
-  @Post('/:courseId/create')
+  //Post ~/enroll/:courseId
+  @Post('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
-  public async enrollCourse(
+  public enrollCourse(
     @CurrentUser('id') id: string,
     @Param('courseId') courseId: string,
   ) {
-    return await this.enrollmentService.enrollCourse(courseId, id);
+    return this.enrollmentService.enrollCourse(courseId, id);
   }
 
-  // GET ~/enroll/all
-  @Get('/all')
+  //Get ~/enroll/:courseId
+  @Get('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
-  public async AllEnrollByUser(@CurrentUser('id') id: string) {
-    return await this.enrollmentService.allEnrollByStudent(id);
-  }
-
-  // DELETE ~/enroll/:courseId/cancel
-  @Get('/:courseId/cancel')
-  @Roles(ROLE.STUDENT)
-  @UseGuards(AuthRoleGuard)
-  public async CancelEnroll(@CurrentUser('id') userId: string, @Query("courseId") courseId) {
-    return await this.enrollmentService.cancelEnroll(courseId ,userId);
+  public AllEnrollByUser(@CurrentUser('id') id: string) {
+    return this.enrollmentService.AllEnrollByStudent(id);
   }
 }

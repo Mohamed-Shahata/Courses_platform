@@ -1,14 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { DataBaseService } from '../db/database.service';
-import { COURSE_MESSAGE, USER_MESSAGES } from 'src/shared/constants/messages';
+import {
+  CATEGORY_MESSAGE,
+  COURSE_MESSAGE,
+  USER_MESSAGES,
+} from 'src/shared/constants/messages';
 
 @Injectable()
 export class CourseService {
   constructor(private prisma: DataBaseService) {}
 
-  public async createCourse(dto: CreateCourseDTO, instId: string) {
+  public async createCourse(
+    dto: CreateCourseDTO,
+    instId: string,
+    categoryId: string,
+    thumbnail: string,
+  ) {
     const instructor = await this.prisma.user.findUnique({
       where: { id: instId },
     });
@@ -16,38 +29,45 @@ export class CourseService {
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    const { title, videoURL, isFree, price, description, language, level } =
-      dto;
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    if (!category)
+      throw new NotFoundException(CATEGORY_MESSAGE.CATEGORY_NOT_FOUND);
+
+    const { title, isFree, price, description, language, level, tags } = dto;
+
     const course = await this.prisma.course.create({
       data: {
         title,
         description,
-        videoURL,
         isFree,
         price: isFree ? 0 : price,
         language,
         level,
+        thumbnail,
         instructor: {
           connect: { id: instId },
+        },
+        tags,
+        category: {
+          connect: {
+            id: categoryId,
+          },
         },
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return { data: course };
   }
 
   public async getAllCourses() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const courses = await this.prisma.course.findMany();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return courses;
   }
   public async getCourseById(id: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const course = await this.prisma.course.findUnique({
       where: { id },
     });
@@ -56,7 +76,6 @@ export class CourseService {
       return {
         message: COURSE_MESSAGE.NOT_FOUND_COURSE,
       };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return { data: course };
   }
   public async getAllCoursesByInst(instId: string) {
@@ -66,12 +85,27 @@ export class CourseService {
 
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const courses = await this.prisma.course.findMany({
       where: { instructor },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return { data: courses };
+  }
+
+  public async filterCourses(category?: string, tag?: string) {
+    const courses = await this.prisma.course.findMany({
+      where: {
+        category: {
+          name: category,
+        },
+        tags: {
+          has: tag,
+        },
+      },
+    });
+
+    if (!courses)
+      throw new BadRequestException(COURSE_MESSAGE.NOT_FOUND_COURSE);
     return { data: courses };
   }
 
@@ -83,13 +117,11 @@ export class CourseService {
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const course = await this.prisma.course.update({
       where: { id, instructorId: instId },
       data: dto,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return { data: course };
   }
   public async deleteCourse(id: string, instId: string) {
@@ -100,7 +132,6 @@ export class CourseService {
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await this.prisma.course.delete({ where: { id, instructorId: instId } });
 
     return { message: COURSE_MESSAGE.DELETE_SUCCESSFUL };

@@ -1,21 +1,20 @@
 import { Module } from '@nestjs/common';
-import { CourseService } from './course.service';
-import { CourseController } from './course.controller';
 import { DataBaseModule } from '../db/database.module';
 import { JwtModule } from '@nestjs/jwt';
+import { LessonService } from './lesson.service';
+import { LessonController } from './lesson.controller';
 import { UserModule } from '../user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+
 @Module({
-  providers: [CourseService],
-  controllers: [CourseController],
   imports: [
     DataBaseModule,
     JwtModule,
     UserModule,
     MulterModule.register({
       storage: diskStorage({
-        destination: './uploads/image',
+        destination: './uploads/video',
         filename: (req, file, cb) => {
           const prefix = `${Date.now()}-${Math.round(Math.random() * 1000000)}`;
           const filename = `${prefix}-${file.originalname}`;
@@ -27,5 +26,7 @@ import { diskStorage } from 'multer';
       },
     }),
   ],
+  providers: [LessonService],
+  controllers: [LessonController],
 })
-export class CourseModule {}
+export class LessonModule {}
