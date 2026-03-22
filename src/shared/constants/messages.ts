@@ -54,6 +54,8 @@ export const COURSE_MESSAGE = {
 
 export const ENROLLMENT_MESSAGE = {
   ENROLL_ALREADY: 'Already enrolled',
+  ENROLLMENT_NOT_FOUND: "Enrollment not found",
+  ENROLLMENT_CANCELED_SUCCESS:'Enrollment canceled successfully'
 };
 
 export const CATEGORY_MESSAGE = {

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param, Post } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, Post, Query } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { ROLE } from 'generated/prisma/enums';

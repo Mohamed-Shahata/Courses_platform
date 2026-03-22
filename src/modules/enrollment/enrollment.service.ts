@@ -50,7 +50,7 @@ export class EnrollmentService {
     return { enroll };
   }
 
-  public async AllEnrollByStudent(studentId: string) {
+  public async allEnrollByStudent(studentId: string) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
     });
@@ -63,5 +63,25 @@ export class EnrollmentService {
     });
 
     return { coursesEnroll };
+  }
+
+  public async cancelEnroll (courseId: string, studentId: string) {
+    const enrollment = this.prisma.enrollment.findFirst({
+      where:{
+        courseId,
+        studentId
+      }
+    });
+
+    if(!enrollment)
+      throw new NotFoundException(ENROLLMENT_MESSAGE.ENROLLMENT_NOT_FOUND)
+
+  await this.prisma.enrollment.delete({
+    where: {
+      id: enrollment.id,
+    },
+  });
+
+  return { message: ENROLLMENT_MESSAGE.ENROLLMENT_CANCELED_SUCCESS };
   }
 }
