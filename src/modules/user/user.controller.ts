@@ -1,4 +1,4 @@
-import { Body, Controller, Get, UseGuards } from '@nestjs/common';
+import {  Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
