@@ -1,4 +1,5 @@
-import { IsBoolean, IsNumber, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsNumber, IsString } from 'class-validator';
 import { CourseLevel } from 'generated/prisma/enums';
 
 export class CreateCourseDTO {
@@ -6,14 +7,13 @@ export class CreateCourseDTO {
   title: string;
 
   @IsString()
-  videoURL: string;
-
-  @IsString()
   description: string;
 
+  @Type(() => Number)
   @IsNumber()
   price: number;
 
+  @Type(() => Boolean)
   @IsBoolean()
   isFree: boolean;
 
@@ -22,4 +22,8 @@ export class CreateCourseDTO {
 
   @IsString()
   language: string;
+
+  @Transform(({ value }) => value.split(','))
+  @IsArray()
+  tags: string[];
 }

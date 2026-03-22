@@ -37,12 +37,14 @@ export const AUTH_MESSAGES = {
   NO_ROLE_DEFINED: 'Access denied: no roles defined',
   NO_PERMISSION:
     'Access denied: you do not have permission to access this resource',
+  ACCOUNT_DELETE: 'Account is deleted',
 };
 
 export const USER_MESSAGES = {
   NOT_FOUND_ACCOUNT: 'No Account found',
   NOT_FOUND_STUDENT: 'No Found Student',
   NOT_FOUND_INST: 'No Found Instructor',
+  DELETE_SUCCESSFUL: 'Delete User Successful',
 };
 
 export const COURSE_MESSAGE = {
@@ -52,4 +54,21 @@ export const COURSE_MESSAGE = {
 
 export const ENROLLMENT_MESSAGE = {
   ENROLL_ALREADY: 'Already enrolled',
+};
+
+export const CATEGORY_MESSAGE = {
+  CATEGORY_ALREADY_IN_DB: 'Category already in DB',
+  CATEGORY_NOT_FOUND: 'Category not found',
+  CATEGORY_DELETE_SUCCESSFUL: 'Category delete successful',
+};
+
+export const REVIEW_MESSAGE = {
+  REVIEWED_ALREADY: 'You are reviewed already',
+  NO_REVIEWS: 'There is no reviews',
+  DELETE_SUCCESSFUL: 'Delete Review Successful',
+};
+
+export const LESSON_MESSAGE = {
+  NO_LESSON: 'There is no lesson',
+  DELETE_SUCCESSFUL: 'Delete Lesson Successful',
 };

@@ -7,29 +7,37 @@ import {
   Param,
   Patch,
   Delete,
+  Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { Roles } from 'src/shared/decorators/user-role.decorator';
 import { ROLE } from 'generated/prisma/enums';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { CreateCourseDTO } from './dto/createCourse.dto';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
+import { CreateCourseDTO } from './dto/createCourse.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
 
 @Controller('course')
 export class CourseController {
   constructor(private courseService: CourseService) {}
 
-  //Post ~/course/create
-  @Post('create')
+  //Post ~/course/create/:categoryId
+  @Post('create/:categoryId')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
+  @UseInterceptors(FileInterceptor('thumbnail'))
   public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
+    @Param('categoryId') categoryId: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.courseService.createCourse(body, id);
+    return this.courseService.createCourse(body, id, categoryId, file.path);
   }
 
   //Get ~/course/all
@@ -52,6 +60,16 @@ export class CourseController {
   @UseGuards(JwtAuthGuard)
   public getCourseById(@Param('id') id: string) {
     return this.courseService.getCourseById(id);
+  }
+
+  //Get ~/course/filter
+  @Get('filter')
+  @UseGuards(JwtAuthGuard)
+  public filterCourses(
+    @Query('category') category?: string,
+    @Query('tag') tag?: string,
+  ) {
+    return this.courseService.filterCourses(category, tag);
   }
 
   //Patch ~/course/update/:id

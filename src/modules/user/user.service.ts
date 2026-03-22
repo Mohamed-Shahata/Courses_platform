@@ -91,4 +91,19 @@ export class UserService {
       data: user,
     };
   }
+
+  public async deleteAccount(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { isDelete: true, deleteAt: new Date() },
+    });
+
+    return { message: USER_MESSAGES.DELETE_SUCCESSFUL };
+  }
 }

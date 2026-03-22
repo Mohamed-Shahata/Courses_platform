@@ -1,4 +1,11 @@
-import { Body, Controller, Get, UseGuards, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  UseGuards,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
@@ -33,6 +40,7 @@ export class UserController {
     return this.userService.getAllInst();
   }
 
+  //Patch ~/user/update
   @Patch('update')
   @UseGuards(JwtAuthGuard)
   public updateProfile(
@@ -40,5 +48,12 @@ export class UserController {
     @Body() body: updateUserDTO,
   ) {
     return this.userService.updateProfile(body, id);
+  }
+
+  // Delete ~/user/delete
+  @Delete('delete')
+  @UseGuards(JwtAuthGuard)
+  public deleteProfile(@CurrentUser('id') id: string) {
+    return this.userService.deleteAccount(id);
   }
 }
