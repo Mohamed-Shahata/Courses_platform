@@ -3,6 +3,7 @@ import { DataBaseService } from '../db/database.service';
 import { addLessonDTO } from './dto/addLesson.dto';
 import { COURSE_MESSAGE, LESSON_MESSAGE } from 'src/shared/constants/messages';
 import { updateLessonDTO } from './dto/updateLesson.dto';
+import { updateLessonStatus } from './dto/updateLessonStatus.dto';
 
 @Injectable()
 export class LessonService {
@@ -73,5 +74,15 @@ export class LessonService {
     await this.prisma.lesson.delete({ where: { id } });
 
     return { message: LESSON_MESSAGE.DELETE_SUCCESSFUL };
+  }
+
+  public async updateLessonStatus(lessonId: string, dto: updateLessonStatus) {
+    const lesson = await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: dto,
+    });
+
+    if (!lesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
+    return { data: lesson };
   }
 }

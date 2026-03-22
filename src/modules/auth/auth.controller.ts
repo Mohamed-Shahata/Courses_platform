@@ -24,6 +24,7 @@ import { ResetPasswordDto } from './dto/resetPassword.dto';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { restoreAccountDTO } from './dto/restoreAccount.dto';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -68,6 +69,12 @@ export class AuthController {
     });
 
     return { message, data: { accessToken } };
+  }
+
+  // POST => ~/auth/restore
+  @Post('restore')
+  public async restoreAccount(@Body() body: restoreAccountDTO) {
+    return this.authService.restoreAccount(body);
   }
 
   // POST ~/auth/access-token
