@@ -30,6 +30,7 @@ enum LessonStatus {
   APPROVED
   REJECTED
 }
+
 model User {
   id String @id @default(uuid())
 
@@ -44,7 +45,7 @@ model User {
 
   refreshToken String?
 
-  isDelete Boolean @default(false)
+  isDelete Boolean   @default(false)
   deleteAt DateTime?
 
   role ROLE @default(STUDENT)
@@ -59,7 +60,7 @@ model User {
   passwordResets PasswordReset?
 
   enrollments Enrollment[]
-  reviews        Review[]
+  reviews     Review[]
 
   taughtCourses Course[] @relation("InstructorCourses")
 }
@@ -81,22 +82,22 @@ model PasswordReset {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Course {
-  id          String      @id @default(uuid())
+  id          String @id @default(uuid())
   title       String
   description String
 
-  price       Float
-  isFree      Boolean     @default(false)
-  level       CourseLevel
-  language    String
+  price    Float
+  isFree   Boolean     @default(false)
+  level    CourseLevel
+  language String
 
-  tags String[]
-  thumbnail String?
-  totalLessons  Int       @default(0)
+  tags         String[]
+  thumbnail    String?
+  totalLessons Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,12 +105,11 @@ model Course {
   instructorId String
   instructor   User         @relation("InstructorCourses", fields: [instructorId], references: [id])
   enrollments  Enrollment[]
-  lessons Lesson[]
-  reviews        Review[]
+  lessons      Lesson[]
+  reviews      Review[]
 
-  
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 }
 
 model Enrollment {
@@ -127,40 +127,40 @@ model Enrollment {
 }
 
 model Lesson {
-  id         String   @id @default(uuid())
-  title      String
+  id    String @id @default(uuid())
+  title String
 
-  videoUrl   String
+  videoUrl String
 
-  courseId  String
-  course    Course  @relation(fields: [courseId], references: [id])
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
 
-  status     LessonStatus @default(PENDING)
+  status LessonStatus @default(PENDING)
 
-  order      Int      
-  createdAt  DateTime @default(now())
+  order     Int
+  createdAt DateTime @default(now())
 }
 
 model Review {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  studentId    String
+  studentId String
   courseId  String
 
-  rating    Int      
-  comment   String?
+  rating  Int
+  comment String?
 
-  student      User     @relation(fields: [studentId], references: [id])
-  course    Course   @relation(fields: [courseId], references: [id])
+  student User   @relation(fields: [studentId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
 
   createdAt DateTime @default(now())
 
-  @@unique([studentId, courseId]) 
+  @@unique([studentId, courseId])
 }
 
 model Category {
-  id      String   @id @default(uuid())
-  name    String   @unique
+  id   String @id @default(uuid())
+  name String @unique
 
   courses Course[]
 }

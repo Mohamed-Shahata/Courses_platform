@@ -22,7 +22,17 @@ import type { Express } from 'express';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 
+@ApiTags('User')
+@ApiBearerAuth('access-token')
 @Controller('user')
 export class UserController {
   constructor(
@@ -30,32 +40,46 @@ export class UserController {
     private config: ConfigService,
   ) {}
 
-  //Get ~/user/profile
+  // GET ~/user/profile
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Returns user profile' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   public getProfile(@CurrentUser('id') id: string) {
     return this.userService.getProfile(id);
   }
 
-  //Get ~/user/students
+  // GET ~/user/students
   @Get('students')
   @Roles(ROLE.ADMIN)
   @UseGuards(AuthRoleGuard)
+  @ApiOperation({ summary: 'Get all students (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns list of all students' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   public getAllStudents() {
     return this.userService.getAllStudent();
   }
 
-  //Get ~/user/instructors
+  // GET ~/user/instructors
   @Get('instructors')
   @Roles(ROLE.ADMIN)
   @UseGuards(AuthRoleGuard)
+  @ApiOperation({ summary: 'Get all instructors (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns list of all instructors' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   public getAllCourses() {
     return this.userService.getAllInst();
   }
 
-  //Patch ~/user/update
+  // PATCH ~/user/update
   @Patch('update')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   public updateProfile(
     @CurrentUser('id') id: string,
     @Body() body: updateUserDTO,
@@ -63,9 +87,12 @@ export class UserController {
     return this.userService.updateProfile(body, id);
   }
 
-  // Delete ~/user/delete
+  // DELETE ~/user/delete
   @Delete('delete')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete current user account' })
+  @ApiResponse({ status: 200, description: 'Account deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   public async deleteProfile(
     @CurrentUser('id') id: string,
     @Res({ passthrough: true }) res: Response,
@@ -81,10 +108,23 @@ export class UserController {
     return msg;
   }
 
-  //Post ~/user/upload-profile
+  // POST ~/user/upload-profile
   @Post('upload-profile')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Upload profile picture' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string', format: 'binary', description: 'Profile image file' },
+      },
+      required: ['image'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Profile picture uploaded successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   public uploadProfile(
     @CurrentUser('id') id: string,
     @UploadedFile() image: Express.Multer.File,
