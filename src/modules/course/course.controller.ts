@@ -21,16 +21,39 @@ import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Course')
+@ApiBearerAuth('access-token')
 @Controller('course')
 export class CourseController {
   constructor(private courseService: CourseService) {}
 
-  //Post ~/course/create/:categoryId
+  //POST ~/course/create/:categoryId
   @Post('create/:categoryId')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('thumbnail'))
+  @ApiOperation({ summary: 'Create a new course (Instructor only)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        thumbnail: { type: 'string', format: 'binary' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        price: { type: 'number' },
+        isFree: { type: 'boolean' },
+        level: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] },
+        language: { type: 'string' },
+        tags: { type: 'string', example: 'tag1,tag2,tag3' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Course created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Instructor role required' })
   public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
@@ -40,31 +63,30 @@ export class CourseController {
     return this.courseService.createCourse(body, id, categoryId, file.path);
   }
 
-  //Get ~/course/all
+  //GET ~/course/all
   @Get('all')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all courses' })
+  @ApiResponse({ status: 200, description: 'Returns all courses' })
   public getAllCourses() {
     return this.courseService.getAllCourses();
   }
 
-  //Get ~/course/inst
+  //GET ~/course/inst
   @Get('inst')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
+  @ApiOperation({ summary: 'Get all courses by instructor (Instructor only)' })
+  @ApiResponse({ status: 200, description: 'Returns instructor courses' })
   public getAllCoursesByInst(@CurrentUser('id') id: string) {
     return this.courseService.getAllCoursesByInst(id);
   }
 
-  //Get ~/course/:id
-  @Get('/:id')
-  @UseGuards(JwtAuthGuard)
-  public getCourseById(@Param('id') id: string) {
-    return this.courseService.getCourseById(id);
-  }
-
-  //Get ~/course/filter
+  //GET ~/course/filter
   @Get('filter')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Filter courses by category or tag' })
+  @ApiResponse({ status: 200, description: 'Returns filtered courses' })
   public filterCourses(
     @Query('category') category?: string,
     @Query('tag') tag?: string,
@@ -72,10 +94,24 @@ export class CourseController {
     return this.courseService.filterCourses(category, tag);
   }
 
-  //Patch ~/course/update/:id
+  //GET ~/course/:id
+  @Get('/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get course by ID' })
+  @ApiResponse({ status: 200, description: 'Returns course details' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
+  public getCourseById(@Param('id') id: string) {
+    return this.courseService.getCourseById(id);
+  }
+
+  //PATCH ~/course/update/:id
   @Patch('update/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
+  @ApiOperation({ summary: 'Update course (Instructor only)' })
+  @ApiResponse({ status: 200, description: 'Course updated successfully' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not your course' })
   public updateCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
@@ -84,10 +120,13 @@ export class CourseController {
     return this.courseService.updateCourse(body, id, instId);
   }
 
-  //Delete ~/course/delete/:id
+  //DELETE ~/course/delete/:id
   @Delete('delete/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
+  @ApiOperation({ summary: 'Delete course (Instructor only)' })
+  @ApiResponse({ status: 200, description: 'Course deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
   public deleteCourse(
     @CurrentUser('id') instId: string,
     @Param('id') id: string,
