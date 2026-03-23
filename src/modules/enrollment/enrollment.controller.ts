@@ -25,6 +25,6 @@ export class EnrollmentController {
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
   public AllEnrollByUser(@CurrentUser('id') id: string) {
-    return this.enrollmentService.AllEnrollByStudent(id);
+    return this.enrollmentService.allEnrollByStudent(id);
   }
 }
