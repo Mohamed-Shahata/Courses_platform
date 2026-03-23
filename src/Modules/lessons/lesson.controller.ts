@@ -20,6 +20,7 @@ import { updateLessonDTO } from './dto/updateLesson.dto';
 import { ROLE } from 'generated/prisma/enums';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
+import { updateLessonStatus } from './dto/updateLessonStatus.dto';
 
 @Controller('lesson')
 export class LessonController {
@@ -67,5 +68,16 @@ export class LessonController {
   @UseGuards(AuthRoleGuard)
   public deleteLesson(@Param('id') id: string) {
     return this.lessonService.deleteLesson(id);
+  }
+
+  //Patch ~/lesson/admin/:id/status
+  @Patch('admin/:id/status')
+  @Roles(ROLE.ADMIN)
+  @UseGuards(AuthRoleGuard)
+  public updateLessonStatus(
+    @Param('id') id: string,
+    @Body() body: updateLessonStatus,
+  ) {
+    return this.lessonService.updateLessonStatus(id, body);
   }
 }

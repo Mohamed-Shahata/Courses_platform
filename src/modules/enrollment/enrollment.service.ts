@@ -65,23 +65,23 @@ export class EnrollmentService {
     return { coursesEnroll };
   }
 
-  public async cancelEnroll (courseId: string, studentId: string) {
-    const enrollment = this.prisma.enrollment.findFirst({
-      where:{
+  public async cancelEnroll(courseId: string, studentId: string) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
         courseId,
-        studentId
-      }
+        studentId,
+      },
     });
 
-    if(!enrollment)
-      throw new NotFoundException(ENROLLMENT_MESSAGE.ENROLLMENT_NOT_FOUND)
+    if (!enrollment)
+      throw new NotFoundException(ENROLLMENT_MESSAGE.ENROLLMENT_NOT_FOUND);
 
-  await this.prisma.enrollment.delete({
-    where: {
-      id: enrollment.id,
-    },
-  });
+    await this.prisma.enrollment.delete({
+      where: {
+        id: enrollment.id,
+      },
+    });
 
-  return { message: ENROLLMENT_MESSAGE.ENROLLMENT_CANCELED_SUCCESS };
+    return { message: ENROLLMENT_MESSAGE.ENROLLMENT_CANCELED_SUCCESS };
   }
 }
