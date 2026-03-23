@@ -25,6 +25,11 @@ enum CourseLevel {
   ADVANCED
 }
 
+enum LessonStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 model User {
   id String @id @default(uuid())
 
@@ -34,6 +39,8 @@ model User {
 
   password_hash String
   phone         String
+
+  profileImage String?
 
   refreshToken String?
 
@@ -119,7 +126,6 @@ model Enrollment {
   @@unique([studentId, courseId])
 }
 
-
 model Lesson {
   id         String   @id @default(uuid())
   title      String
@@ -128,6 +134,8 @@ model Lesson {
 
   courseId  String
   course    Course  @relation(fields: [courseId], references: [id])
+
+  status     LessonStatus @default(PENDING)
 
   order      Int      
   createdAt  DateTime @default(now())

@@ -101,9 +101,34 @@ export class UserService {
 
     await this.prisma.user.update({
       where: { id },
-      data: { isDelete: true, deleteAt: new Date() },
+      data: { isDelete: true, deleteAt: new Date(), refreshToken: null },
     });
 
     return { message: USER_MESSAGES.DELETE_SUCCESSFUL };
+  }
+
+  public async uploadProfile(id: string, profileImage: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { profileImage },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        profileImage: true,
+      },
+    });
+
+    return {
+      message: USER_MESSAGES.UPDATE_PROFILEIMAGE_SUCCESSFUL,
+      data: updatedUser,
+    };
   }
 }

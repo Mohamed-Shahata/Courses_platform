@@ -19,6 +19,7 @@ import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
 import { ChangePasswordDto } from './dto/changePassword.dto';
+import { restoreAccountDTO } from './dto/restoreAccount.dto';
 
 @Injectable()
 export class AuthService {
@@ -128,6 +129,24 @@ export class AuthService {
     });
 
     return { message: AUTH_MESSAGES.LOGIN_SUCCESS, accessToken, refreshToken };
+  }
+
+  public async restoreAccount(dto: restoreAccountDTO) {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        isDelete: false,
+      },
+    });
+
+    return { message: AUTH_MESSAGES.ACCOUNT_RESTORE };
   }
 
   public async getAccessToken(refreshToken: string) {
