@@ -226,4 +226,5 @@ model QuizAttempt {
 
   createdAt DateTime @default(now())
   @@unique([studentId,quizId])
+
 }
