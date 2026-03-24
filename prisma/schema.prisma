@@ -228,3 +228,4 @@ model QuizAttempt {
   @@unique([studentId,quizId])
 
 }
+

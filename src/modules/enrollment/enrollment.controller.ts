@@ -11,7 +11,6 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
-
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
 @ApiTags('Enrollment')
