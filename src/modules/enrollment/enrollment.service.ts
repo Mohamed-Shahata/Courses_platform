@@ -29,10 +29,14 @@ export class EnrollmentService {
    * @throws {BadRequestException} If the student is already enrolled in the course.
    */
   public async enrollCourse(courseId: string, studentId: string) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
     if (!course) throw new NotFoundException(COURSE_MESSAGE.NOT_FOUND_COURSE);
 
-    const student = await this.prisma.user.findUnique({ where: { id: studentId } });
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
     if (!student) throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
     const existing = await this.prisma.enrollment.findUnique({
@@ -59,7 +63,9 @@ export class EnrollmentService {
    * @throws {NotFoundException} If the student is not found.
    */
   public async allEnrollByStudent(studentId: string) {
-    const student = await this.prisma.user.findUnique({ where: { id: studentId } });
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
     if (!student) throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
     const coursesEnroll = await this.prisma.enrollment.findMany({
@@ -90,5 +96,15 @@ export class EnrollmentService {
     await this.prisma.enrollment.delete({ where: { id: enrollment.id } });
 
     return { message: ENROLLMENT_MESSAGE.ENROLLMENT_CANCELED_SUCCESS };
+  }
+
+  public async getAllCourseEnrolled() {
+    const enrollments = await this.prisma.enrollment.findMany({
+      include: {
+        course: true,
+      },
+    });
+
+    return { data: enrollments };
   }
 }

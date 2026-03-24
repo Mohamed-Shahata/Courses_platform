@@ -16,7 +16,7 @@ import { diskStorage } from 'multer';
     JwtModule,
     MulterModule.register({
       storage: diskStorage({
-        destination: './uploads/profilesImage ',
+        destination: './uploads/profilesImage',
         filename: (req, file, cb) => {
           const prefix = `${Date.now()}-${Math.round(Math.random() * 1000000)}`;
           const filename = `${prefix}-${file.originalname}`;

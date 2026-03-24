@@ -12,6 +12,8 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+
 @ApiTags('Enrollment')
 @ApiBearerAuth('access-token')
 @Controller('enroll')
@@ -25,9 +27,15 @@ export class EnrollmentController {
   @ApiOperation({ summary: 'Enroll in a course (Student only)' })
   @ApiParam({ name: 'courseId', description: 'Course ID to enroll in' })
   @ApiResponse({ status: 201, description: 'Enrolled successfully' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Already enrolled or course not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Already enrolled or course not found',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Student role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
   public enrollCourse(
     @CurrentUser('id') id: string,
     @Param('courseId') courseId: string,
@@ -39,12 +47,30 @@ export class EnrollmentController {
   @Get('/:courseId')
   @Roles(ROLE.STUDENT)
   @UseGuards(AuthRoleGuard)
-  @ApiOperation({ summary: 'Get all enrollments for current student (Student only)' })
-  @ApiParam({ name: 'courseId', description: 'Course ID (used for routing context)' })
-  @ApiResponse({ status: 200, description: 'Returns list of student enrollments' })
+  @ApiOperation({
+    summary: 'Get all enrollments for current student (Student only)',
+  })
+  @ApiParam({
+    name: 'courseId',
+    description: 'Course ID (used for routing context)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns list of student enrollments',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Student role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
   public allEnrollByUser(@CurrentUser('id') id: string) {
     return this.enrollmentService.allEnrollByStudent(id);
+  }
+
+  //Get ~/enroll/allCourse
+  @Get('allCourse')
+  @UseGuards(JwtAuthGuard)
+  public allCourseEnrolled() {
+    return this.enrollmentService.getAllCourseEnrolled();
   }
 }

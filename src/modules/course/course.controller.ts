@@ -21,7 +21,14 @@ import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 @ApiTags('Course')
 @ApiBearerAuth('access-token')
@@ -45,7 +52,10 @@ export class CourseController {
         description: { type: 'string' },
         price: { type: 'number' },
         isFree: { type: 'boolean' },
-        level: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] },
+        level: {
+          type: 'string',
+          enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'],
+        },
         language: { type: 'string' },
         tags: { type: 'string', example: 'tag1,tag2,tag3' },
       },
@@ -53,7 +63,10 @@ export class CourseController {
   })
   @ApiResponse({ status: 201, description: 'Course created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Instructor role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor role required',
+  })
   public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
@@ -132,5 +145,16 @@ export class CourseController {
     @Param('id') id: string,
   ) {
     return this.courseService.deleteCourse(id, instId);
+  }
+
+  // Get ~course/progress/:courseId
+  @Get('progress/:courseId')
+  @Roles(ROLE.STUDENT)
+  @UseGuards(AuthRoleGuard)
+  public progressCourse(
+    @CurrentUser('id') id: string,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.courseService.getCourseProgress(courseId, id);
   }
 }
