@@ -136,4 +136,29 @@ export class CourseService {
 
     return { message: COURSE_MESSAGE.DELETE_SUCCESSFUL };
   }
+
+  public async getCourseProgress(courseId: string, studentId: string) {
+    const totalLesson = await this.prisma.lesson.count({
+      where: { courseId },
+    });
+
+    const completeLesson = await this.prisma.lessonProgress.count({
+      where: {
+        studentId,
+        lesson: { courseId },
+        completed: true,
+      },
+    });
+
+    const progress =
+      totalLesson === 0 ? 0 : (completeLesson / totalLesson) * 100;
+
+    return {
+      data: {
+        totalLesson,
+        completeLesson,
+        progress: Math.round(progress),
+      },
+    };
+  }
 }

@@ -11,6 +11,9 @@ import { ReviewModule } from './modules/reviews/review.module';
 import { LessonModule } from './modules/lessons/lesson.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JobModule } from './jobs/job.module';
+import { QuizModule } from './modules/quiz/quiz.module';
+import { QuestionModule } from './modules/question/question.module';
+import { QuizAttemptModule } from './modules/quizAttempt/quizAttempt.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { JobModule } from './jobs/job.module';
     ReviewModule,
     LessonModule,
     JobModule,
+    QuizModule,
+    QuestionModule,
+    QuizAttemptModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

@@ -133,4 +133,15 @@ export class CourseController {
   ) {
     return this.courseService.deleteCourse(id, instId);
   }
+
+  // Get ~course/progress/:courseId
+  @Get('progress/:courseId')
+  @Roles(ROLE.STUDENT)
+  @UseGuards(AuthRoleGuard)
+  public progressCourse(
+    @CurrentUser('id') id: string,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.courseService.getCourseProgress(courseId, id);
+  }
 }

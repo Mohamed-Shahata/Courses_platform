@@ -76,3 +76,14 @@ export const LESSON_MESSAGE = {
   NO_LESSON: 'There is no lesson',
   DELETE_SUCCESSFUL: 'Delete Lesson Successful',
 };
+
+export const QUIZ_MESSAGE = {
+  NO_QUIZ_FOR_LESSON: 'there is no quiz for this lesson',
+  NO_QUIZ: ' there is no quiz',
+  DELETE_QUIZ: 'Delete Quiz Successful',
+};
+
+export const QUESTION_MESSAGE = {
+  NO_QUESTION_FOR_QUIZ: 'there is no question for this quiz',
+  NO_QUESTION: 'there is no question',
+};
