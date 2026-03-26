@@ -38,6 +38,7 @@ export const AUTH_MESSAGES = {
   NO_PERMISSION:
     'Access denied: you do not have permission to access this resource',
   ACCOUNT_DELETE: 'Account deleted, check your email to restore',
+  ACCOUNT_NOT_DELETED: 'Account not deleted',
   ACCOUNT_RESTORE: 'Account restore successful , can login now! ',
 };
 
@@ -50,6 +51,7 @@ export const USER_MESSAGES = {
 };
 
 export const COURSE_MESSAGE = {
+  IMAGE_COURSE_EMPTY: 'Image course is empty',
   DELETE_SUCCESSFUL: 'Course delete successful ',
   NOT_FOUND_COURSE: 'Not Found Course',
 };

@@ -25,7 +25,7 @@ import {
 
 @ApiTags('Category')
 @ApiBearerAuth('access-token')
-@Controller('category')
+@Controller('categories')
 export class CategoryController {
   constructor(private categoryService: CategoryService) {}
 

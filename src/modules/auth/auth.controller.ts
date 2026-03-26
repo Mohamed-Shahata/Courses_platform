@@ -51,8 +51,14 @@ export class AuthController {
   // POST => ~/auth/register
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User registered successfully. Verification email sent.' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Validation error or email already exists' })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully. Verification email sent.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Validation error or email already exists',
+  })
   public register(@Body() body: RegisterDTO) {
     return this.authService.register(body);
   }
@@ -60,9 +66,16 @@ export class AuthController {
   // GET => ~/auth/verify-email
   @Get('verify-email')
   @ApiOperation({ summary: 'Verify user email via token' })
-  @ApiQuery({ name: 'token', required: true, description: 'Email verification token' })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'Email verification token',
+  })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  @ApiResponse({ status: 400, description: 'Bad Request - No token provided or invalid token' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - No token provided or invalid token',
+  })
   public verify_email(@Query('token') token: string) {
     if (!token) throw new BadRequestException(AUTH_MESSAGES.NO_TOKEN_PROVIDER);
     return this.authService.verify_email(token);
@@ -73,13 +86,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Login and receive access token' })
   @ApiResponse({
     status: 200,
-    description: 'Login successful. Returns accessToken. Sets refreshToken cookie.',
+    description:
+      'Login successful. Returns accessToken. Sets refreshToken cookie.',
     schema: {
-      example: { message: 'Logged in successfully', data: { accessToken: 'jwt...' } },
+      example: {
+        message: 'Logged in successfully',
+        data: { accessToken: 'jwt...' },
+      },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid credentials' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Email not verified' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid credentials',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Email not verified',
+  })
   public async login(
     @Res({ passthrough: true }) res: Response,
     @Body() body: LoginDTO,
@@ -111,8 +134,14 @@ export class AuthController {
   @ApiCookieAuth('refreshToken')
   @ApiOperation({ summary: 'Get new access token using refresh token cookie' })
   @ApiResponse({ status: 200, description: 'Returns new access token' })
-  @ApiResponse({ status: 400, description: 'Bad Request - No refresh token provided' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired refresh token' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - No refresh token provided',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired refresh token',
+  })
   public getAccessToken(@Req() req: RequestWithCookies) {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken)
@@ -129,8 +158,8 @@ export class AuthController {
     return this.authService.resendEmailVerification(body);
   }
 
-  // GET ~/auth/logout
-  @Get('logout')
+  // POST ~/auth/logout
+  @Post('logout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Logout and clear refresh token cookie' })
@@ -163,9 +192,16 @@ export class AuthController {
   // POST ~/auth/password/reset
   @Post('password/reset')
   @ApiOperation({ summary: 'Reset password using token from email' })
-  @ApiQuery({ name: 'token', required: true, description: 'Password reset token' })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'Password reset token',
+  })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid or expired token' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid or expired token',
+  })
   public ResetPassword(
     @Body() body: ResetPasswordDto,
     @Query('token') token: string,
@@ -179,7 +215,10 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Change password (authenticated user)' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Incorrect current password' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Incorrect current password',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   public changePassword(
     @CurrentUser('id') userId: string,

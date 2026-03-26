@@ -69,7 +69,14 @@ export class AuthService {
     const verificationToken = generateToken();
 
     const Nuser = await this.prisma.user.create({
-      data: { first_name, last_name, email, password_hash: passwordHash, role, phone },
+      data: {
+        first_name,
+        last_name,
+        email,
+        password_hash: passwordHash,
+        role,
+        phone,
+      },
     });
 
     await this.prisma.emailVerification.create({
@@ -112,7 +119,9 @@ export class AuthService {
       data: { isVerified: true },
     });
 
-    await this.prisma.emailVerification.delete({ where: { token: record.token } });
+    await this.prisma.emailVerification.delete({
+      where: { token: record.token },
+    });
 
     return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
   }
@@ -140,8 +149,10 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
-    if (user.isDelete) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_DELETE);
-    if (!user.isVerified) throw new BadRequestException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
+    if (user.isDelete)
+      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_DELETE);
+    if (!user.isVerified)
+      throw new BadRequestException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
@@ -152,7 +163,9 @@ export class AuthService {
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') as StringValue,
+      expiresIn: this.config.get<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as StringValue,
     });
 
     const Hrefresh = await bcrypt.hash(refreshToken, 10);
@@ -179,9 +192,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
+    // must check account is deleted or not
+    if (!user.isDelete)
+      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_DELETED);
+
     await this.prisma.user.update({
       where: { email },
-      data: { isDelete: false },
+      data: { isDelete: false, deleteAt: null }, // shwitch deleteAt => null
     });
 
     return { message: AUTH_MESSAGES.ACCOUNT_RESTORE };
@@ -199,11 +216,16 @@ export class AuthService {
    * @throws {BadRequestException} If the user is not found, has no stored token, or the token doesn't match.
    */
   public async getAccessToken(refreshToken: string) {
-    const payload: JwtPayloadType = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-    });
+    const payload: JwtPayloadType = await this.jwtService.verifyAsync(
+      refreshToken,
+      {
+        secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      },
+    );
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.id },
+    });
     if (!user || !user.refreshToken)
       throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
 
@@ -240,7 +262,9 @@ export class AuthService {
     });
 
     if (emailVerify) {
-      await this.prisma.emailVerification.delete({ where: { id: emailVerify.id } });
+      await this.prisma.emailVerification.delete({
+        where: { id: emailVerify.id },
+      });
     }
 
     const verificationToken = generateToken();
@@ -300,7 +324,6 @@ export class AuthService {
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     const token = generateToken();
-
     await this.prisma.passwordReset.create({
       data: {
         userId: user.id,
@@ -312,7 +335,9 @@ export class AuthService {
     const resetLink = `${this.config.get<string>('DOMAIN')}/auth/password/reset?token=${token}`;
     await this.mailService.resetPassword(user.email, resetLink);
 
-    return { message: AUTH_MESSAGES.WE_HAVE_SENT_A_PASSWORD_CHANGE_LINK_TO_YOUR_EMAIL };
+    return {
+      message: AUTH_MESSAGES.WE_HAVE_SENT_A_PASSWORD_CHANGE_LINK_TO_YOUR_EMAIL,
+    };
   }
 
   /**
@@ -331,7 +356,9 @@ export class AuthService {
   public async resetPassword(dto: ResetPasswordDto, token: string) {
     const { confirmNewPassword, newPassword } = dto;
 
-    const reset = await this.prisma.passwordReset.findUnique({ where: { token } });
+    const reset = await this.prisma.passwordReset.findUnique({
+      where: { token },
+    });
     if (!reset || reset.expiresAt < new Date()) {
       throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
     }

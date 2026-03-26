@@ -116,6 +116,18 @@ export class UserService {
     const newUser = await this.prisma.user.update({
       where: { id },
       data: dto,
+      select: {
+        first_name: true,
+        last_name: true,
+        phone: true,
+        email: true,
+        isVerified: true,
+        isDelete: true,
+        created_at: true,
+        updated_at: true,
+        id: true,
+        profileImage: true,
+      },
     });
 
     return { data: newUser };
