@@ -10,6 +10,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { Roles } from 'src/shared/decorators/user-role.decorator';
@@ -29,15 +30,16 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { COURSE_MESSAGE } from 'src/shared/constants/messages';
 
 @ApiTags('Course')
 @ApiBearerAuth('access-token')
-@Controller('course')
+@Controller('courses')
 export class CourseController {
   constructor(private courseService: CourseService) {}
 
-  //POST ~/course/create/:categoryId
-  @Post('create/:categoryId')
+  //POST ~/courses/create
+  @Post('create')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('thumbnail'))
@@ -50,6 +52,7 @@ export class CourseController {
         thumbnail: { type: 'string', format: 'binary' },
         title: { type: 'string' },
         description: { type: 'string' },
+        categoryName: { type: 'string' },
         price: { type: 'number' },
         isFree: { type: 'boolean' },
         level: {
@@ -70,14 +73,14 @@ export class CourseController {
   public createCourse(
     @CurrentUser('id') id: string,
     @Body() body: CreateCourseDTO,
-    @Param('categoryId') categoryId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.courseService.createCourse(body, id, categoryId, file.path);
+    if (!file) throw new BadRequestException(COURSE_MESSAGE.IMAGE_COURSE_EMPTY);
+    return this.courseService.createCourse(body, id, file.path);
   }
 
-  //GET ~/course/all
-  @Get('all')
+  //GET ~/courses
+  @Get('')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all courses' })
   @ApiResponse({ status: 200, description: 'Returns all courses' })
@@ -85,7 +88,7 @@ export class CourseController {
     return this.courseService.getAllCourses();
   }
 
-  //GET ~/course/inst
+  //GET ~/courses/inst
   @Get('inst')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
@@ -95,7 +98,7 @@ export class CourseController {
     return this.courseService.getAllCoursesByInst(id);
   }
 
-  //GET ~/course/filter
+  //GET ~/courses/filter
   @Get('filter')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Filter courses by category or tag' })
@@ -107,7 +110,7 @@ export class CourseController {
     return this.courseService.filterCourses(category, tag);
   }
 
-  //GET ~/course/:id
+  //GET ~/courses/:id
   @Get('/:id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get course by ID' })
@@ -117,7 +120,7 @@ export class CourseController {
     return this.courseService.getCourseById(id);
   }
 
-  //PATCH ~/course/update/:id
+  //PATCH ~/courses/update/:id
   @Patch('update/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
@@ -133,7 +136,7 @@ export class CourseController {
     return this.courseService.updateCourse(body, id, instId);
   }
 
-  //DELETE ~/course/delete/:id
+  //DELETE ~/courses/delete/:id
   @Delete('delete/:id')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)

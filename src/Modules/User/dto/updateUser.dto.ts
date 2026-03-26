@@ -12,12 +12,18 @@ export class updateUserDTO {
   @IsOptional()
   last_name: string;
 
-  @ApiPropertyOptional({ example: 'john.doe@example.com', description: 'User email' })
-  @IsEmail()
-  @IsOptional()
-  email: string;
+  // change mail not change here because user can input any email without verified
+  // @ApiPropertyOptional({ example: 'john.doe@example.com', description: 'User email' })
+  // @IsEmail()
+  // @IsOptional()
+  // email: string;
 
-  @ApiPropertyOptional({ example: '01234567890', description: 'User phone number', minLength: 11, maxLength: 11 })
+  @ApiPropertyOptional({
+    example: '01234567890',
+    description: 'User phone number',
+    minLength: 11,
+    maxLength: 11,
+  })
   @IsString()
   @Length(11, 11, { message: 'Phone number must be exactly 11 digits' })
   @IsOptional()

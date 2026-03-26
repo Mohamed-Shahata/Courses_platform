@@ -19,9 +19,18 @@ export class CourseService {
   public async createCourse(
     dto: CreateCourseDTO,
     instId: string,
-    categoryId: string,
     thumbnail: string,
   ) {
+    const {
+      title,
+      isFree,
+      price,
+      description,
+      language,
+      level,
+      tags,
+      categoryName,
+    } = dto;
     const instructor = await this.prisma.user.findUnique({
       where: { id: instId },
     });
@@ -30,13 +39,11 @@ export class CourseService {
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
     const category = await this.prisma.category.findUnique({
-      where: { id: categoryId },
+      where: { name: categoryName },
     });
 
     if (!category)
       throw new NotFoundException(CATEGORY_MESSAGE.CATEGORY_NOT_FOUND);
-
-    const { title, isFree, price, description, language, level, tags } = dto;
 
     const course = await this.prisma.course.create({
       data: {
@@ -53,7 +60,7 @@ export class CourseService {
         tags,
         category: {
           connect: {
-            id: categoryId,
+            name: categoryName,
           },
         },
       },
