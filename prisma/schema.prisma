@@ -19,6 +19,16 @@ enum ROLE {
   ADMIN
 }
 
+enum EVENT_TYPE {
+  SEND_VERIFICATION_EMAIL
+  SEND_RESET_PASSWORD
+}
+
+enum STATUS_OUTBOX {
+  PENDING
+  SENT
+  FAILED
+}
 enum CourseLevel {
   BEGINNER
   INTERMEDIATE
@@ -66,6 +76,22 @@ model User {
 
   lessonProgress LessonProgress[]
   quizAttempts   QuizAttempt[]
+}
+
+model Outbox{
+  id String @id @default(uuid())
+
+  event_type EVENT_TYPE
+  payload Json
+
+  status STATUS_OUTBOX @default(PENDING)
+
+  retryCount Int @default(0)
+
+  nextRetryAt DateTime @default(now())
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model EmailVerification {

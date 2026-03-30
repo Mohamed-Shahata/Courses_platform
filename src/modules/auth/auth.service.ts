@@ -20,6 +20,7 @@ import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { restoreAccountDTO } from './dto/restoreAccount.dto';
+import { EVENT_TYPE } from 'generated/prisma/enums';
 
 /**
  * Service responsible for all authentication-related business logic.
@@ -68,27 +69,32 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = generateToken();
 
-    const Nuser = await this.prisma.user.create({
-      data: {
-        first_name,
-        last_name,
-        email,
-        password_hash: passwordHash,
-        role,
-        phone,
-      },
-    });
+    await this.prisma.$transaction(async (pr) => {
+      const Nuser = await pr.user.create({
+        data: {
+          first_name,
+          last_name,
+          email,
+          password_hash: passwordHash,
+          role,
+          phone,
+        },
+      });
+      await pr.emailVerification.create({
+        data: {
+          userId: Nuser.id,
+          token: verificationToken,
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+      });
 
-    await this.prisma.emailVerification.create({
-      data: {
-        userId: Nuser.id,
-        token: verificationToken,
-        expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-      },
+      await pr.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          payload: { email, token: verificationToken },
+        },
+      });
     });
-
-    const link = `${this.config.get<string>('DOMAIN')}/auth/verify-email?token=${verificationToken}`;
-    await this.mailService.sendVerifyEmail(email, link);
 
     return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
   }
@@ -269,16 +275,22 @@ export class AuthService {
 
     const verificationToken = generateToken();
 
-    await this.prisma.emailVerification.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-      },
-    });
+    await this.prisma.$transaction(async (pr) => {
+      await pr.emailVerification.create({
+        data: {
+          userId: user.id,
+          token: verificationToken,
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+      });
 
-    const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/verify-email?token=${verificationToken}`;
-    await this.mailService.sendVerifyEmail(email, link);
+      await pr.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          payload: { email, token: verificationToken },
+        },
+      });
+    });
 
     return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
   }
@@ -324,16 +336,23 @@ export class AuthService {
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     const token = generateToken();
-    await this.prisma.passwordReset.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-      },
-    });
 
-    const resetLink = `${this.config.get<string>('DOMAIN')}/auth/password/reset?token=${token}`;
-    await this.mailService.resetPassword(user.email, resetLink);
+    await this.prisma.$transaction(async (pr) => {
+      await pr.passwordReset.create({
+        data: {
+          userId: user.id,
+          token,
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+      });
+
+      await pr.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_RESET_PASSWORD,
+          payload: { email, token },
+        },
+      });
+    });
 
     return {
       message: AUTH_MESSAGES.WE_HAVE_SENT_A_PASSWORD_CHANGE_LINK_TO_YOUR_EMAIL,

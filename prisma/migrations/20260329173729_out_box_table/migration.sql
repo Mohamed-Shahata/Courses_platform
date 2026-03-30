@@ -1,0 +1,19 @@
+-- CreateEnum
+CREATE TYPE "EVENT_TYPE" AS ENUM ('SEND_VERIFICATION_EMAIL', 'SEND_RESET_PASSWORD');
+
+-- CreateEnum
+CREATE TYPE "STATUS_OUTBOX" AS ENUM ('PENDING', 'SENT', 'FAILED');
+
+-- CreateTable
+CREATE TABLE "Outbox" (
+    "id" TEXT NOT NULL,
+    "event_type" "EVENT_TYPE" NOT NULL,
+    "payload" JSONB NOT NULL,
+    "status" "STATUS_OUTBOX" NOT NULL,
+    "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "nextRetryAt" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Outbox_pkey" PRIMARY KEY ("id")
+);
