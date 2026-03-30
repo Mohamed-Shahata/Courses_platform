@@ -4,10 +4,11 @@ import { CategoryController } from './category.controller';
 import { DataBaseModule } from '../db/database.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
+import { AdminCategoryController } from './admin-category.controller';
 
 @Module({
   providers: [CategoryService],
-  controllers: [CategoryController],
+  controllers: [CategoryController, AdminCategoryController],
   imports: [DataBaseModule, JwtModule, UserModule],
 })
 export class CategoryModule {}

@@ -7,9 +7,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { AdminUserController } from './admin-user.controller';
 
 @Module({
-  controllers: [UserController],
+  controllers: [UserController, AdminUserController],
   providers: [UserService, JwtAuthGuard, AuthRoleGuard],
   imports: [
     DataBaseModule,

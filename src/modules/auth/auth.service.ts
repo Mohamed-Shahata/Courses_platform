@@ -388,6 +388,20 @@ export class AuthService {
       );
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: reset.userId },
+    });
+
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password_hash,
+    );
+
+    if (isSamePassword)
+      throw new BadRequestException(AUTH_MESSAGES.CANNOT_USE_OLD_PASSWORD);
+
     const hash = await bcrypt.hash(newPassword, 10);
 
     await this.prisma.user.update({
@@ -427,6 +441,14 @@ export class AuthService {
         AUTH_MESSAGES.NEW_PASSWORD_AND_CONFIRM_PASSWORD_NOT_MATCHING,
       );
     }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password_hash,
+    );
+
+    if (isSamePassword)
+      throw new BadRequestException(AUTH_MESSAGES.CANNOT_USE_OLD_PASSWORD);
 
     const hash = await bcrypt.hash(newPassword, 10);
 
