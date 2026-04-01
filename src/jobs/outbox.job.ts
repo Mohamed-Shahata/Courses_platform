@@ -4,6 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { EVENT_TYPE, STATUS_OUTBOX } from 'generated/prisma/enums';
 import { DataBaseService } from 'src/modules/db/database.service';
 import { MailService } from 'src/shared/mail/mail.service';
+import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
 
 @Injectable()
 export class OutboxJob {
@@ -58,7 +59,7 @@ export class OutboxJob {
         const delay = this.getDelay(newRetryCount);
 
         const newStatus =
-          newRetryCount > 3 ? STATUS_OUTBOX.FAILED : STATUS_OUTBOX.PENDING;
+          newRetryCount >= 3 ? STATUS_OUTBOX.FAILED : STATUS_OUTBOX.PENDING;
 
         await this.prisma.outbox.update({
           where: { id: msg.id },
@@ -73,10 +74,10 @@ export class OutboxJob {
   }
 
   private getDelay(retryCount: number): number {
-    if (retryCount === 1) return 60 * 1000;
-    if (retryCount === 2) return 5 * 60 * 1000;
-    if (retryCount === 3) return 15 * 60 * 1000;
+    if (retryCount === 1) return mintesToMilliseconds(1);
+    if (retryCount === 2) return mintesToMilliseconds(5);
+    if (retryCount === 3) return mintesToMilliseconds(15);
 
-    return 60 * 60 * 1000;
+    return mintesToMilliseconds(60);
   }
 }
