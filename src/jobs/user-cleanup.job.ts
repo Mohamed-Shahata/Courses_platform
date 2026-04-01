@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataBaseService } from 'src/modules/db/database.service';
+import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
 
 @Injectable()
 export class UserCleanupJob {
@@ -8,7 +9,7 @@ export class UserCleanupJob {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async deleteUnverifiedUsers() {
-    const fifteenDays = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const fifteenDays = new Date(Date.now() - daysToMilliseconds(15));
 
     await this.prisma.user.deleteMany({
       where: {
