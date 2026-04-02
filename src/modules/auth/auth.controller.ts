@@ -14,7 +14,7 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
 import { LoginDTO } from './dto/login.dto';
-import { Response, Request } from 'express';
+import { Response, Request, CookieOptions } from 'express';
 import { PRODUCTION, REFRESH_TOKEN } from 'src/shared/constants/variables';
 import { ConfigService } from '@nestjs/config';
 import { daysToMilliseconds } from 'src/shared/utils/cookie.util';
@@ -113,12 +113,7 @@ export class AuthController {
     const { message, accessToken, refreshToken } =
       await this.authService.login(body);
 
-    res.cookie(REFRESH_TOKEN, refreshToken, {
-      httpOnly: true,
-      secure: this.config.get<string>('NODE_ENV') == PRODUCTION ? true : false,
-      sameSite: 'strict',
-      maxAge: daysToMilliseconds(7),
-    });
+    res.cookie(REFRESH_TOKEN, refreshToken, this.getCookieOptions());
 
     return { message, data: { accessToken } };
   }
@@ -178,11 +173,7 @@ export class AuthController {
   ) {
     const response = await this.authService.logout(userId);
 
-    res.clearCookie(REFRESH_TOKEN, {
-      httpOnly: true,
-      secure: this.config.get<string>('NODE_ENV') == PRODUCTION ? true : false,
-      sameSite: 'strict',
-    });
+    res.clearCookie(REFRESH_TOKEN, this.getCookieOptions());
 
     return response;
   }
@@ -234,5 +225,14 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(userId, dto);
+  }
+
+  private getCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: this.config.get<string>('NODE_ENV') === PRODUCTION,
+      sameSite: 'strict',
+      maxAge: daysToMilliseconds(7),
+    };
   }
 }

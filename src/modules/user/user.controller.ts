@@ -9,6 +9,7 @@ import {
   Res,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
@@ -109,6 +110,7 @@ export class UserController {
     @CurrentUser('id') id: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
+    if (!image) throw new BadRequestException('Image is empty');
     return this.userService.uploadProfile(id, image.path);
   }
 }
