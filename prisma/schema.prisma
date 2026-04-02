@@ -51,7 +51,8 @@ model User {
   password_hash String
   phone         String
 
-  profileImage String?
+  profileImageUrl String?
+  profileImagePublicId String?
 
   refreshToken String?
 

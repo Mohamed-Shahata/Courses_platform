@@ -8,6 +8,7 @@ import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { AdminUserController } from './admin-user.controller';
+import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 
 @Module({
   controllers: [UserController, AdminUserController],
@@ -15,6 +16,7 @@ import { AdminUserController } from './admin-user.controller';
   imports: [
     DataBaseModule,
     JwtModule,
+    CloudinaryModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/profilesImage',

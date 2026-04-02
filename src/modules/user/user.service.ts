@@ -3,6 +3,7 @@ import { DataBaseService } from '../db/database.service';
 import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
 import { ROLE } from 'generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
+import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 
 /**
  * Service responsible for user profile management operations.
@@ -14,7 +15,10 @@ import { updateUserDTO } from './dto/updateUser.dto';
  */
 @Injectable()
 export class UserService {
-  constructor(private prisma: DataBaseService) {}
+  constructor(
+    private prisma: DataBaseService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
   /**
    * Retrieves the public profile of a user by their ID.
@@ -126,7 +130,7 @@ export class UserService {
         created_at: true,
         updated_at: true,
         id: true,
-        profileImage: true,
+        profileImageUrl: true,
       },
     });
 
@@ -191,15 +195,18 @@ export class UserService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
+    const { url, publicId } =
+      await this.cloudinaryService.uploadImageAndUpdate(profileImage);
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: { profileImage },
+      data: { profileImageUrl: url, profileImagePublicId: publicId },
       select: {
         id: true,
         first_name: true,
         last_name: true,
         email: true,
-        profileImage: true,
+        profileImageUrl: true,
       },
     });
 
