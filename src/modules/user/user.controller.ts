@@ -12,9 +12,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
-import { Roles } from 'src/shared/decorators/user-role.decorator';
-import { ROLE } from 'generated/prisma/enums';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { updateUserDTO } from './dto/updateUser.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -48,30 +45,6 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   public getProfile(@CurrentUser('id') id: string) {
     return this.userService.getProfile(id);
-  }
-
-  // GET ~/user/students
-  @Get('students')
-  @Roles(ROLE.ADMIN)
-  @UseGuards(AuthRoleGuard)
-  @ApiOperation({ summary: 'Get all students (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Returns list of all students' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
-  public getAllStudents() {
-    return this.userService.getAllStudent();
-  }
-
-  // GET ~/user/instructors
-  @Get('instructors')
-  @Roles(ROLE.ADMIN)
-  @UseGuards(AuthRoleGuard)
-  @ApiOperation({ summary: 'Get all instructors (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Returns list of all instructors' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
-  public getAllCourses() {
-    return this.userService.getAllInst();
   }
 
   // PATCH ~/user/update
@@ -118,12 +91,19 @@ export class UserController {
     schema: {
       type: 'object',
       properties: {
-        image: { type: 'string', format: 'binary', description: 'Profile image file' },
+        image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Profile image file',
+        },
       },
       required: ['image'],
     },
   })
-  @ApiResponse({ status: 200, description: 'Profile picture uploaded successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile picture uploaded successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   public uploadProfile(
     @CurrentUser('id') id: string,

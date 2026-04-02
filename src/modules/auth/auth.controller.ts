@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Patch,
   Post,
   Query,
@@ -33,6 +34,7 @@ import {
   ApiQuery,
   ApiCookieAuth,
 } from '@nestjs/swagger';
+import { StatusCode } from 'src/shared/enums/statusCode.enum';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -83,6 +85,7 @@ export class AuthController {
 
   // POST => ~/auth/login
   @Post('login')
+  @HttpCode(StatusCode.OK)
   @ApiOperation({ summary: 'Login and receive access token' })
   @ApiResponse({
     status: 200,
@@ -120,8 +123,9 @@ export class AuthController {
     return { message, data: { accessToken } };
   }
 
-  // POST => ~/auth/restore
-  @Post('restore')
+  // Patch => ~/auth/restore
+  @Patch('restore')
+  @HttpCode(StatusCode.OK)
   @ApiOperation({ summary: 'Restore a previously deleted account' })
   @ApiResponse({ status: 200, description: 'Account restored successfully' })
   @ApiResponse({ status: 404, description: 'Account not found' })
@@ -129,8 +133,9 @@ export class AuthController {
     return this.authService.restoreAccount(body);
   }
 
-  // POST ~/auth/access-token
-  @Post('access-token')
+  // POST ~/auth/refresh
+  @Post('refresh')
+  @HttpCode(StatusCode.OK)
   @ApiCookieAuth('refreshToken')
   @ApiOperation({ summary: 'Get new access token using refresh token cookie' })
   @ApiResponse({ status: 200, description: 'Returns new access token' })
@@ -151,6 +156,7 @@ export class AuthController {
 
   // POST ~/auth/resend-email
   @Post('resend-email')
+  @HttpCode(StatusCode.OK)
   @ApiOperation({ summary: 'Resend email verification link' })
   @ApiResponse({ status: 200, description: 'Verification email resent' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -160,6 +166,7 @@ export class AuthController {
 
   // POST ~/auth/logout
   @Post('logout')
+  @HttpCode(StatusCode.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Logout and clear refresh token cookie' })
@@ -182,6 +189,7 @@ export class AuthController {
 
   // POST ~/auth/password/forgot
   @Post('password/forgot')
+  @HttpCode(StatusCode.OK)
   @ApiOperation({ summary: 'Send password reset email' })
   @ApiResponse({ status: 200, description: 'Reset email sent successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -189,8 +197,9 @@ export class AuthController {
     return this.authService.forgotPassword(body);
   }
 
-  // POST ~/auth/password/reset
-  @Post('password/reset')
+  // Patch ~/auth/password/reset
+  @Patch('password/reset')
+  @HttpCode(StatusCode.OK)
   @ApiOperation({ summary: 'Reset password using token from email' })
   @ApiQuery({
     name: 'token',

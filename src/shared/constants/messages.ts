@@ -40,6 +40,8 @@ export const AUTH_MESSAGES = {
   ACCOUNT_DELETE: 'Account deleted, check your email to restore',
   ACCOUNT_NOT_DELETED: 'Account not deleted',
   ACCOUNT_RESTORE: 'Account restore successful , can login now! ',
+
+  CANNOT_USE_OLD_PASSWORD: 'You cannot use your old password',
 };
 
 export const USER_MESSAGES = {
