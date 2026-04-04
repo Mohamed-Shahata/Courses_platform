@@ -1,0 +1,17 @@
+model Quiz {
+  id        String   @id @default(uuid())
+
+  name      String?
+
+  lessonId  String   @unique
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+
+  instructorId  String   @unique
+  instructor    Instructor   @relation(fields: [instructorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  questions Question[]
+
+  quizAttempts QuizAttempt[]
+}

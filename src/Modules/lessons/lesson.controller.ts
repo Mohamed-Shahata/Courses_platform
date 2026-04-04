@@ -49,7 +49,11 @@ export class LessonController {
     schema: {
       type: 'object',
       properties: {
-        videoURL: { type: 'string', format: 'binary', description: 'Lesson video file' },
+        videoURL: {
+          type: 'string',
+          format: 'binary',
+          description: 'Lesson video file',
+        },
         title: { type: 'string' },
         description: { type: 'string' },
         order: { type: 'number' },
@@ -59,15 +63,26 @@ export class LessonController {
   })
   @ApiResponse({ status: 201, description: 'Lesson created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Instructor role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor role required',
+  })
   @ApiResponse({ status: 404, description: 'Course not found' })
   public createLesson(
     @CurrentUser('id') instId: string,
     @Param('courseId') courseId: string,
-    @Body() body: addLessonDTO,
+    @Param('lessonSessionId') lessonSessionId: string,
+    @Body()
+    body: addLessonDTO,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.lessonService.createLesson(body, instId, courseId, file.path);
+    return this.lessonService.createLesson(
+      body,
+      instId,
+      courseId,
+      file.path,
+      lessonSessionId,
+    );
   }
 
   // GET ~/lesson/all/:courseId
@@ -102,7 +117,10 @@ export class LessonController {
   @ApiParam({ name: 'id', description: 'Lesson ID' })
   @ApiResponse({ status: 200, description: 'Lesson updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Instructor role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor role required',
+  })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
   public updateLesson(@Param('id') id: string, @Body() body: updateLessonDTO) {
     return this.lessonService.updateLesson(body, id);
@@ -116,7 +134,10 @@ export class LessonController {
   @ApiParam({ name: 'id', description: 'Lesson ID' })
   @ApiResponse({ status: 200, description: 'Lesson deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Instructor role required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor role required',
+  })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
   public deleteLesson(@Param('id') id: string) {
     return this.lessonService.deleteLesson(id);
@@ -128,7 +149,10 @@ export class LessonController {
   @UseGuards(AuthRoleGuard)
   @ApiOperation({ summary: 'Update lesson status (Admin only)' })
   @ApiParam({ name: 'id', description: 'Lesson ID' })
-  @ApiResponse({ status: 200, description: 'Lesson status updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lesson status updated successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: 404, description: 'Lesson not found' })

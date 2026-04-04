@@ -1,0 +1,12 @@
+model UserToken {
+  id String @id @default(uuid())
+  token String @unique
+  expiresAt DateTime
+
+  type EVENT_TYPE 
+
+  userId String 
+  User User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type])
+}

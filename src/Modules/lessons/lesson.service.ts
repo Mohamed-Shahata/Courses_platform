@@ -36,6 +36,7 @@ export class LessonService {
     instId: string,
     courseId: string,
     videoUrl: string,
+    lessonSessionId: string,
   ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId, instructorId: instId },
@@ -45,7 +46,7 @@ export class LessonService {
     const { title, order } = dto;
 
     const lesson = await this.prisma.lesson.create({
-      data: { title, videoUrl, order, courseId },
+      data: { title, videoUrl, order, courseId, lessonSessionId },
     });
 
     return { data: lesson };
@@ -59,7 +60,9 @@ export class LessonService {
    * @throws {BadRequestException} If the course is not found.
    */
   public async getAlllessonWithCourse(courseId: string) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
     if (!course) throw new BadRequestException(COURSE_MESSAGE.NOT_FOUND_COURSE);
 
     const lessons = await this.prisma.lesson.findMany({ where: { courseId } });

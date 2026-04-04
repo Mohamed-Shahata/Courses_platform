@@ -1,0 +1,21 @@
+model Lesson {
+  id    String @id @default(uuid())
+  title String
+
+  videoUrl String
+
+  status LessonStatus @default(PENDING)
+
+  order      Int      
+  createdAt  DateTime @default(now())
+
+  quiz      Quiz?
+
+  lessonProgresses LessonProgress[]
+
+  courseId  String
+  course Course? @relation(fields: [courseId ], references: [id])
+
+  lessonSessionId  String
+  lessonSessions LessonSession? @relation(fields: [lessonSessionId ], references: [id])
+}

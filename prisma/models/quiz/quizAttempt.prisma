@@ -1,0 +1,15 @@
+model QuizAttempt {
+  id        String   @id @default(uuid())
+
+  studentId    String
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+
+  score     Int
+  passed    Boolean
+
+  createdAt DateTime @default(now())
+  @@unique([studentId,quizId])
+}

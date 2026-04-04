@@ -1,0 +1,31 @@
+model Course {
+  id          String @id @default(uuid())
+  title       String
+  description String
+
+  price    Float
+  isFree   Boolean     @default(false)
+  level    CourseLevel
+  language String
+
+  tags         String[]
+  thumbnail    String?
+  totalLessons Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instructorId String
+  instructor Instructor @relation(fields: [instructorId], references: [id])
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  enrollments Enrollment[]
+
+  reviews Review[]
+
+  lessonSessions LessonSession[]
+
+  lessons Lesson[]
+}
