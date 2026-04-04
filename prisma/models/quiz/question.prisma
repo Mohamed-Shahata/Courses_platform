@@ -1,0 +1,10 @@
+model Question {
+  id        String   @id @default(uuid())
+  question  String
+
+  options   String[] 
+  correctAnswer String
+
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+}

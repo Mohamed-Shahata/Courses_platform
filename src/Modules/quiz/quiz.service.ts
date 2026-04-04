@@ -21,11 +21,8 @@ export class QuizService {
     const quiz = await this.prisma.quiz.create({
       data: {
         name: dto.name,
-        lesson: {
-          connect: {
-            id: lessonId,
-          },
-        },
+        instructorId,
+        lessonId: lessonId,
       },
     });
 
@@ -36,9 +33,13 @@ export class QuizService {
     const quizes = await this.prisma.course.findUnique({
       where: { id: courseId },
       include: {
-        lessons: {
+        lessonSessions: {
           include: {
-            quiz: true,
+            lessons: {
+              include: {
+                quiz: true,
+              },
+            },
           },
         },
       },
@@ -57,11 +58,9 @@ export class QuizService {
     return { data: quiz };
   }
 
-  public async updateQuiz() {}
-
   public async deleteQuiz(id: string, instructorId: string) {
     const quiz = await this.prisma.quiz.findUnique({
-      where: { id, lesson: { course: { instructorId } } },
+      where: { id, instructorId },
     });
 
     if (!quiz) throw new BadRequestException(QUIZ_MESSAGE.NO_QUIZ);

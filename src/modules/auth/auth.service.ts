@@ -80,10 +80,11 @@ export class AuthService {
           phone,
         },
       });
-      await pr.emailVerification.create({
+      await pr.userToken.create({
         data: {
           userId: Nuser.id,
           token: verificationToken,
+          type: 'SEND_VERIFICATION_EMAIL',
           expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
         },
       });
@@ -111,7 +112,7 @@ export class AuthService {
    * @throws {BadRequestException} If the token is invalid or expired.
    */
   public async verify_email(token: string) {
-    const record = await this.prisma.emailVerification.findUnique({
+    const record = await this.prisma.userToken.findUnique({
       where: { token },
       include: { User: true },
     });
@@ -125,7 +126,7 @@ export class AuthService {
       data: { isVerified: true },
     });
 
-    await this.prisma.emailVerification.delete({
+    await this.prisma.userToken.delete({
       where: { token: record.token },
     });
 
@@ -263,12 +264,14 @@ export class AuthService {
     if (user.isVerified)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_VERIFIED);
 
-    const emailVerify = await this.prisma.emailVerification.findUnique({
-      where: { userId: user.id },
+    const emailVerify = await this.prisma.userToken.findUnique({
+      where: {
+        userId_type: { userId: user.id, type: 'SEND_VERIFICATION_EMAIL' },
+      },
     });
 
     if (emailVerify) {
-      await this.prisma.emailVerification.delete({
+      await this.prisma.userToken.delete({
         where: { id: emailVerify.id },
       });
     }
@@ -276,10 +279,11 @@ export class AuthService {
     const verificationToken = generateToken();
 
     await this.prisma.$transaction(async (pr) => {
-      await pr.emailVerification.create({
+      await pr.userToken.create({
         data: {
           userId: user.id,
           token: verificationToken,
+          type: 'SEND_VERIFICATION_EMAIL',
           expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
         },
       });
@@ -338,10 +342,11 @@ export class AuthService {
     const token = generateToken();
 
     await this.prisma.$transaction(async (pr) => {
-      await pr.passwordReset.create({
+      await pr.userToken.create({
         data: {
           userId: user.id,
           token,
+          type: 'SEND_RESET_PASSWORD',
           expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
         },
       });
@@ -375,7 +380,7 @@ export class AuthService {
   public async resetPassword(dto: ResetPasswordDto, token: string) {
     const { confirmNewPassword, newPassword } = dto;
 
-    const reset = await this.prisma.passwordReset.findUnique({
+    const reset = await this.prisma.userToken.findUnique({
       where: { token },
     });
     if (!reset || reset.expiresAt < new Date()) {
@@ -409,7 +414,7 @@ export class AuthService {
       data: { password_hash: hash },
     });
 
-    await this.prisma.passwordReset.delete({ where: { id: reset.id } });
+    await this.prisma.userToken.delete({ where: { id: reset.id } });
 
     return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
   }

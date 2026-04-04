@@ -1,0 +1,31 @@
+model User {
+  id String @id @default(uuid())
+
+  first_name String
+  last_name  String
+  email      String @unique
+
+  password_hash String
+  phone         String
+
+  profileImageUrl String?
+  profileImagePublicId String?
+
+  refreshToken String?
+
+  isDelete Boolean   @default(false)
+  deleteAt DateTime?
+
+  role ROLE
+
+  isVerified Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  admin Admin?
+  instructor Instructor?
+  student Student?
+
+  userToken UserToken[]
+}

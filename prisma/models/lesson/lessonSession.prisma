@@ -1,0 +1,8 @@
+
+model LessonSession {
+  id String @id @default(uuid())
+  lessons Lesson[]
+  
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}

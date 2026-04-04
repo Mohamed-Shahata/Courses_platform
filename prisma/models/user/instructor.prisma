@@ -1,0 +1,9 @@
+model Instructor {
+  id String @id @default(uuid())
+  userId String @unique
+  User User @relation(fields: [userId], references: [id])
+
+  courses Course[]
+
+  quizzes Quiz[]
+}

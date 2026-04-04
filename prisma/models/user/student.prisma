@@ -1,0 +1,13 @@
+model Student {
+  id String @id @default(uuid())
+  userId String @unique
+  User User @relation(fields: [userId], references: [id])
+
+  enrollments Enrollment[]
+
+  reviews Review[]
+
+  lessonProgresses LessonProgress[]
+
+  quizAttempts QuizAttempt[]
+}
