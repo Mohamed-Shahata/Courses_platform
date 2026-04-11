@@ -4,6 +4,7 @@ import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
 import { ROLE } from 'generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
 import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
+import { UserRepository } from './user.repository';
 
 /**
  * Service responsible for user profile management operations.
@@ -16,7 +17,7 @@ import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 @Injectable()
 export class UserService {
   constructor(
-    private prisma: DataBaseService,
+    private userRepo: UserRepository,
     private cloudinaryService: CloudinaryService,
   ) {}
 
@@ -31,17 +32,7 @@ export class UserService {
    * @throws {BadRequestException} If no user is found with the given ID.
    */
   public async getProfile(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        role: true,
-      },
-    });
+    const user = await this.userRepo.findByIdSelect(id);
 
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
@@ -58,17 +49,7 @@ export class UserService {
    * @throws {BadRequestException} If no students are found.
    */
   public async getAllStudent() {
-    const students = await this.prisma.user.findMany({
-      where: { role: ROLE.STUDENT },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        role: true,
-      },
-    });
+    const students = await this.userRepo.findByRole(ROLE.STUDENT);
 
     if (!students)
       throw new BadRequestException(USER_MESSAGES.NOT_FOUND_STUDENT);
@@ -86,17 +67,7 @@ export class UserService {
    * @throws {BadRequestException} If no instructors are found.
    */
   public async getAllInst() {
-    const inst = await this.prisma.user.findMany({
-      where: { role: ROLE.INSTRUCTOR },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        role: true,
-      },
-    });
+    const inst = await this.userRepo.findByRole(ROLE.INSTRUCTOR);
 
     if (!inst) throw new BadRequestException(USER_MESSAGES.NOT_FOUND_INST);
 
@@ -114,25 +85,10 @@ export class UserService {
    * @throws {BadRequestException} If no user is found with the given ID.
    */
   public async updateProfile(dto: updateUserDTO, id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.userRepo.findById(id);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    const newUser = await this.prisma.user.update({
-      where: { id },
-      data: dto,
-      select: {
-        first_name: true,
-        last_name: true,
-        phone: true,
-        email: true,
-        isVerified: true,
-        isDelete: true,
-        created_at: true,
-        updated_at: true,
-        id: true,
-        profileImageUrl: true,
-      },
-    });
+    const newUser = await this.userRepo.updateProfile(id, dto);
 
     return { data: newUser };
   }
@@ -148,10 +104,7 @@ export class UserService {
    * @throws {BadRequestException} If no user is found with the given ID.
    */
   public async findUser(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, role: true },
-    });
+    const user = await this.userRepo.findByIdForGuard(id);
 
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
@@ -170,13 +123,10 @@ export class UserService {
    * @throws {BadRequestException} If no user is found with the given ID.
    */
   public async deleteAccount(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.userRepo.findById(id);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    await this.prisma.user.update({
-      where: { id },
-      data: { isDelete: true, deleteAt: new Date(), refreshToken: null },
-    });
+    await this.userRepo.softDelete(id);
 
     return { message: USER_MESSAGES.DELETE_SUCCESSFUL };
   }
@@ -192,23 +142,17 @@ export class UserService {
    * @throws {BadRequestException} If no user is found with the given ID.
    */
   public async uploadProfile(id: string, profileImage: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.userRepo.findById(id);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     const { url, publicId } =
       await this.cloudinaryService.uploadImageAndUpdate(profileImage);
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: { profileImageUrl: url, profileImagePublicId: publicId },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        profileImageUrl: true,
-      },
-    });
+    const updatedUser = await this.userRepo.updateProfileImage(
+      id,
+      url,
+      publicId,
+    );
 
     return {
       message: USER_MESSAGES.UPDATE_PROFILEIMAGE_SUCCESSFUL,

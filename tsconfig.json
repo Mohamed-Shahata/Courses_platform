@@ -13,6 +13,7 @@
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
+    "strictPropertyInitialization": false, // ✅ أضف السطر ده
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
@@ -20,6 +21,5 @@
     "paths": {
       "@prisma/client": ["./generated/prisma/client"]
     }
-  },
-  "include": ["**/*.ts"]
+  }
 }
