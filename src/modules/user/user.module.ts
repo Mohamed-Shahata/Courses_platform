@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { DataBaseModule } from '../db/database.module';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
+import { AuthRoleGuard } from '../../shared/guards/auth-role.guard';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { AdminUserController } from './admin-user.controller';
-import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
+import { CloudinaryModule } from '../../shared/cloudinary/cloudinary.module';
 import { UserRepository } from './user.repository';
 
 @Module({

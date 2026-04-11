@@ -1,4 +1,4 @@
-import { RoleUser } from 'src/shared/enums/RoleUser.enum';
+import { RoleUser } from '../../../shared/enums/RoleUser.enum';
 
 // ========== User ==========
 

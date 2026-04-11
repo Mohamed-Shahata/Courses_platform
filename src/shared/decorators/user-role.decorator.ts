@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { ROLE } from 'generated/prisma/enums';
+import { ROLE } from '../../../generated/prisma/enums';
 
 /**
  * Decorator that attaches one or more required roles to a route handler.

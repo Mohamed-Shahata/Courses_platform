@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../db/database.service';
-import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
-import { ROLE } from 'generated/prisma/enums';
+import { AUTH_MESSAGES, USER_MESSAGES } from '../../shared/constants/messages';
+import { ROLE } from '../../../generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
-import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
+import { CloudinaryService } from '../../shared/cloudinary/cloudinary.service';
 import { UserRepository } from './user.repository';
 
 /**

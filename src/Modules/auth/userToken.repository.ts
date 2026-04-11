@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { DataBaseService } from '../db/database.service';
-import { EVENT_TYPE } from '@prisma/client';
 import {
   ICreateUserToken,
   IFindByUserIdAndType,

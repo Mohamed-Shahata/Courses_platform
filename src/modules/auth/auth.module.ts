@@ -6,7 +6,7 @@ import { MailModule } from '../../shared/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { UserModule } from '../user/user.module';
 import { UserTokenRepository } from './userToken.repository';
 

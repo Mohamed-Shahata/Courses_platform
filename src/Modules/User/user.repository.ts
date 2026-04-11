@@ -9,9 +9,8 @@ import {
   ICreateUserToken,
   ICreateUserWithVerification,
 } from './types/user.types';
-import { EVENT_TYPE, ROLE } from '@prisma/client';
-import { RoleUser } from 'src/shared/enums/RoleUser.enum';
-import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
+import { EVENT_TYPE, ROLE } from '../../../generated/prisma/client';
+import { mintesToMilliseconds } from '../../shared/utils/cookie.util';
 
 /**
  * Repository responsible for all direct database operations on the User model.

@@ -1,4 +1,4 @@
-import { EVENT_TYPE } from '@prisma/client';
+import { EVENT_TYPE } from '../../../../generated/prisma/enums';
 
 export interface ICreateUserToken {
   userId: string;
