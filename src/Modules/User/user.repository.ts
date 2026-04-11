@@ -7,8 +7,11 @@ import {
   IUpdateRefreshToken,
   IRestoreAccount,
   ICreateUserToken,
+  ICreateUserWithVerification,
 } from './types/user.types';
-import { ROLE } from '@prisma/client';
+import { EVENT_TYPE, ROLE } from '@prisma/client';
+import { RoleUser } from 'src/shared/enums/RoleUser.enum';
+import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
 
 /**
  * Repository responsible for all direct database operations on the User model.
@@ -66,6 +69,89 @@ export class UserRepository {
   }
 
   // ==================== Mutations ====================
+
+  async createUserWithVerification(data: ICreateUserWithVerification) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. create user
+      const user = await tx.user.create({
+        data: {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email,
+          password_hash: data.password_hash,
+          role: data.role,
+          phone: data.phone,
+        },
+      });
+
+      // 2. create verification token
+      await tx.userToken.create({
+        data: {
+          userId: user.id,
+          token: data.token,
+          type: 'SEND_VERIFICATION_EMAIL',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        },
+      });
+
+      // 3. create outbox event
+      await tx.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          payload: {
+            email: data.email,
+            token: data.token,
+          },
+        },
+      });
+
+      return user;
+    });
+  }
+
+  async resendVerification(
+    userId: string,
+    email: string,
+    verificationToken: string,
+  ) {
+    await this.prisma.$transaction(async (pr) => {
+      await pr.userToken.create({
+        data: {
+          userId: userId,
+          token: verificationToken,
+          type: 'SEND_VERIFICATION_EMAIL',
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+      });
+
+      await pr.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          payload: { email, token: verificationToken },
+        },
+      });
+    });
+  }
+
+  async forgotPassword(data: { userId: string; token: string; email: string }) {
+    await this.prisma.$transaction(async (pr) => {
+      await pr.userToken.create({
+        data: {
+          userId: data.userId,
+          token: data.token,
+          type: 'SEND_RESET_PASSWORD',
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+      });
+
+      await pr.outbox.create({
+        data: {
+          event_type: EVENT_TYPE.SEND_RESET_PASSWORD,
+          payload: { email: data.email, token: data.token },
+        },
+      });
+    });
+  }
 
   create(data: ICreateUser) {
     return this.prisma.user.create({ data });
@@ -138,16 +224,6 @@ export class UserRepository {
       include: { User: true },
     });
   }
-
-  // findTokenByUserAndType(userId: string, type: string) {
-  //   return this.prisma.userToken.findUnique({
-  //     where: { userId_type: { userId, type } },
-  //   });
-  // }
-
-  // createToken(data: ICreateUserToken) {
-  //   return this.prisma.userToken.create({ data });
-  // }
 
   deleteTokenById(id: string) {
     return this.prisma.userToken.delete({ where: { id } });

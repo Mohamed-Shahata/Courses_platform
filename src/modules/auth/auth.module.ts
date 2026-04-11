@@ -7,6 +7,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { UserModule } from '../user/user.module';
+import { UserTokenRepository } from './userToken.repository';
 
 @Module({
   imports: [
@@ -26,8 +28,9 @@ import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
     }),
     DataBaseModule,
     MailModule,
+    UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
+  providers: [AuthService, JwtAuthGuard, UserTokenRepository],
 })
 export class AuthModule {}

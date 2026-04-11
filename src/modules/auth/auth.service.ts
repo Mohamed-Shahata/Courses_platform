@@ -21,6 +21,8 @@ import { ResetPasswordDto } from './dto/resetPassword.dto';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { restoreAccountDTO } from './dto/restoreAccount.dto';
 import { EVENT_TYPE } from 'generated/prisma/enums';
+import { UserRepository } from '../user/user.repository';
+import { UserTokenRepository } from './userToken.repository';
 
 /**
  * Service responsible for all authentication-related business logic.
@@ -33,10 +35,11 @@ import { EVENT_TYPE } from 'generated/prisma/enums';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: DataBaseService,
+    private userRepo: UserRepository,
     private config: ConfigService,
     private mailService: MailService,
     private jwtService: JwtService,
+    private userTokenRepo: UserTokenRepository,
   ) {}
 
   /**
@@ -63,38 +66,20 @@ export class AuthService {
   public async register(dto: RegisterDTO) {
     const { first_name, last_name, email, password, role, phone } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepo.findByEmail(email);
     if (user) throw new ConflictException(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS);
 
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = generateToken();
 
-    await this.prisma.$transaction(async (pr) => {
-      const Nuser = await pr.user.create({
-        data: {
-          first_name,
-          last_name,
-          email,
-          password_hash: passwordHash,
-          role,
-          phone,
-        },
-      });
-      await pr.userToken.create({
-        data: {
-          userId: Nuser.id,
-          token: verificationToken,
-          type: 'SEND_VERIFICATION_EMAIL',
-          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-        },
-      });
-
-      await pr.outbox.create({
-        data: {
-          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
-          payload: { email, token: verificationToken },
-        },
-      });
+    await this.userRepo.createUserWithVerification({
+      email,
+      first_name,
+      last_name,
+      password_hash: passwordHash,
+      phone,
+      role,
+      token: verificationToken,
     });
 
     return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
@@ -112,24 +97,15 @@ export class AuthService {
    * @throws {BadRequestException} If the token is invalid or expired.
    */
   public async verify_email(token: string) {
-    const record = await this.prisma.userToken.findUnique({
-      where: { token },
-      include: { User: true },
-    });
+    const record = await this.userTokenRepo.findByToken(token);
 
     if (!record) throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
     if (record.expiresAt < new Date())
       throw new BadRequestException(AUTH_MESSAGES.TOKEN_EXPORED);
 
-    await this.prisma.user.update({
-      where: { id: record.userId },
-      data: { isVerified: true },
-    });
+    await this.userRepo.verifyEmail(record.userId);
 
-    await this.prisma.userToken.delete({
-      where: { token: record.token },
-    });
-
+    await this.userTokenRepo.deleteById(record.token);
     return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
   }
 
@@ -154,7 +130,7 @@ export class AuthService {
   public async login(dto: LoginDTO) {
     const { email, password } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepo.findByEmail(email);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
     if (user.isDelete)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_DELETE);
@@ -176,10 +152,7 @@ export class AuthService {
     });
 
     const Hrefresh = await bcrypt.hash(refreshToken, 10);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: Hrefresh },
-    });
+    await this.userRepo.updateRefreshToken(user.id, { refreshToken: Hrefresh });
 
     return { message: AUTH_MESSAGES.LOGIN_SUCCESS, accessToken, refreshToken };
   }
@@ -196,16 +169,16 @@ export class AuthService {
   public async restoreAccount(dto: restoreAccountDTO) {
     const { email } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepo.findByEmail(email);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     // must check account is deleted or not
     if (!user.isDelete)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_DELETED);
 
-    await this.prisma.user.update({
-      where: { email },
-      data: { isDelete: false, deleteAt: null }, // shwitch deleteAt => null
+    await this.userRepo.restoreAccount(email, {
+      isDelete: false,
+      deleteAt: null,
     });
 
     return { message: AUTH_MESSAGES.ACCOUNT_RESTORE };
@@ -230,9 +203,7 @@ export class AuthService {
       },
     );
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.id },
-    });
+    const user = await this.userRepo.findById(payload.id);
     if (!user || !user.refreshToken)
       throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
 
@@ -259,42 +230,27 @@ export class AuthService {
   public async resendEmailVerification(dto: ResendEmailVerification) {
     const { email } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepo.findByEmail(email);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
     if (user.isVerified)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_VERIFIED);
 
-    const emailVerify = await this.prisma.userToken.findUnique({
-      where: {
-        userId_type: { userId: user.id, type: 'SEND_VERIFICATION_EMAIL' },
-      },
+    const emailVerify = await this.userTokenRepo.findByUserIdAndType({
+      userId: user.id,
+      type: 'SEND_VERIFICATION_EMAIL',
     });
 
     if (emailVerify) {
-      await this.prisma.userToken.delete({
-        where: { id: emailVerify.id },
-      });
+      await this.userTokenRepo.deleteById(emailVerify.id);
     }
 
     const verificationToken = generateToken();
 
-    await this.prisma.$transaction(async (pr) => {
-      await pr.userToken.create({
-        data: {
-          userId: user.id,
-          token: verificationToken,
-          type: 'SEND_VERIFICATION_EMAIL',
-          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-        },
-      });
-
-      await pr.outbox.create({
-        data: {
-          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
-          payload: { email, token: verificationToken },
-        },
-      });
-    });
+    await this.userRepo.resendVerification(
+      user.id,
+      user.email,
+      verificationToken,
+    ); // user object here
 
     return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
   }
@@ -310,14 +266,11 @@ export class AuthService {
    * @throws {BadRequestException} If no account or refresh token is found.
    */
   public async logout(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.userRepo.findById(id);
     if (!user || !user.refreshToken)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: '' },
-    });
+    await this.userRepo.updateRefreshToken(user.id, { refreshToken: '' });
 
     return { message: AUTH_MESSAGES.USER_LOGOUT };
   }
@@ -336,27 +289,15 @@ export class AuthService {
   public async forgotPassword(dto: ForgotPasswordDto) {
     const { email } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepo.findByEmail(email);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     const token = generateToken();
 
-    await this.prisma.$transaction(async (pr) => {
-      await pr.userToken.create({
-        data: {
-          userId: user.id,
-          token,
-          type: 'SEND_RESET_PASSWORD',
-          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-        },
-      });
-
-      await pr.outbox.create({
-        data: {
-          event_type: EVENT_TYPE.SEND_RESET_PASSWORD,
-          payload: { email, token },
-        },
-      });
+    await this.userRepo.forgotPassword({
+      userId: user.id,
+      email: user.email,
+      token,
     });
 
     return {
@@ -380,9 +321,7 @@ export class AuthService {
   public async resetPassword(dto: ResetPasswordDto, token: string) {
     const { confirmNewPassword, newPassword } = dto;
 
-    const reset = await this.prisma.userToken.findUnique({
-      where: { token },
-    });
+    const reset = await this.userTokenRepo.findByToken(token);
     if (!reset || reset.expiresAt < new Date()) {
       throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
     }
@@ -393,9 +332,7 @@ export class AuthService {
       );
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: reset.userId },
-    });
+    const user = await this.userRepo.findById(reset.id);
 
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
@@ -409,12 +346,9 @@ export class AuthService {
 
     const hash = await bcrypt.hash(newPassword, 10);
 
-    await this.prisma.user.update({
-      where: { id: reset.userId },
-      data: { password_hash: hash },
-    });
+    await this.userRepo.updatePassword(reset.userId, { password_hash: hash });
 
-    await this.prisma.userToken.delete({ where: { id: reset.id } });
+    await this.userTokenRepo.deleteById(reset.id);
 
     return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
   }
@@ -434,7 +368,7 @@ export class AuthService {
   public async changePassword(userId: string, dto: ChangePasswordDto) {
     const { confirmNewPassword, currentPassword, newPassword } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.userRepo.findById(userId);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
@@ -457,10 +391,7 @@ export class AuthService {
 
     const hash = await bcrypt.hash(newPassword, 10);
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password_hash: hash },
-    });
+    await this.userRepo.updatePassword(userId, { password_hash: hash });
 
     return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
   }
