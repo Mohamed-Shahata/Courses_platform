@@ -16,6 +16,9 @@ model User {
   isDelete Boolean   @default(false)
   deleteAt DateTime?
 
+  isBanned Boolean   @default(false)
+  bannedAt DateTime?
+
   role ROLE
 
   isVerified Boolean @default(false)

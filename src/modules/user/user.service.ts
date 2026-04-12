@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { AUTH_MESSAGES, USER_MESSAGES } from '../../shared/constants/messages';
 import { ROLE } from '../../../generated/prisma/enums';
 import { updateUserDTO } from './dto/updateUser.dto';
@@ -39,6 +43,19 @@ export class UserService {
   }
 
   /**
+   * Retrieves a list of ALL users in the system regardless of role.
+   *
+   * Intended for admin use only. Returns a safe selection of fields
+   * without sensitive information (no password_hash, no tokens).
+   *
+   * @returns An object containing an array of all user records.
+   */
+  public async getAllUsers() {
+    const users = await this.userRepo.findAllUsers();
+    return { data: users };
+  }
+
+  /**
    * Retrieves a list of all users with the `STUDENT` role.
    *
    * Intended for admin use only. Returns a safe selection of fields
@@ -54,6 +71,54 @@ export class UserService {
       throw new BadRequestException(USER_MESSAGES.NOT_FOUND_STUDENT);
 
     return { data: students };
+  }
+
+  /**
+   * Bans a user account by ID.
+   *
+   * Sets `isBanned` to `true`, records a `bannedAt` timestamp,
+   * and clears the refresh token to terminate any active session immediately.
+   *
+   * Cannot ban an ADMIN account.
+   *
+   * @param targetId - The ID of the user to ban.
+   * @returns An object containing the updated user record.
+   * @throws {BadRequestException} If the user is not found or is already banned.
+   * @throws {ConflictException} If attempting to ban an ADMIN account.
+   */
+  public async banUser(targetId: string) {
+    const user = await this.userRepo.findById(targetId);
+
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+    if (user.role === ROLE.ADMIN)
+      throw new ConflictException(USER_MESSAGES.CANNOT_BAN_ADMIN);
+    if (user.isBanned)
+      throw new ConflictException(USER_MESSAGES.ALREADY_BANNED);
+
+    const updatedUser = await this.userRepo.banUser(targetId);
+
+    return { message: USER_MESSAGES.BAN_SUCCESSFUL, data: updatedUser };
+  }
+
+  /**
+   * Unbans a previously banned user account by ID.
+   *
+   * Clears the `isBanned` flag and the `bannedAt` timestamp,
+   * restoring the user's ability to log in.
+   *
+   * @param targetId - The ID of the user to unban.
+   * @returns An object containing the updated user record.
+   * @throws {BadRequestException} If the user is not found or is not currently banned.
+   */
+  public async unbanUser(targetId: string) {
+    const user = await this.userRepo.findById(targetId);
+
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+    if (!user.isBanned) throw new BadRequestException(USER_MESSAGES.NOT_BANNED);
+
+    const updatedUser = await this.userRepo.unbanUser(targetId);
+
+    return { message: USER_MESSAGES.UNBAN_SUCCESSFUL, data: updatedUser };
   }
 
   /**

@@ -50,6 +50,11 @@ export const USER_MESSAGES = {
   NOT_FOUND_INST: 'No Found Instructor',
   DELETE_SUCCESSFUL: 'Delete User Successful',
   UPDATE_PROFILEIMAGE_SUCCESSFUL: 'Profile image updated successfully',
+  BAN_SUCCESSFUL: 'User has been banned successfully.',
+  UNBAN_SUCCESSFUL: 'User has been unbanned successfully.',
+  ALREADY_BANNED: 'This user is already banned.',
+  NOT_BANNED: 'This user is not currently banned.',
+  CANNOT_BAN_ADMIN: 'Admin accounts cannot be banned.',
 };
 
 export const COURSE_MESSAGE = {

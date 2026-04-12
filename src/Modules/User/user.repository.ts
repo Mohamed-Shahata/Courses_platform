@@ -67,6 +67,74 @@ export class UserRepository {
     });
   }
 
+  // ==================== Admin Queries ====================
+
+  /**
+   * Returns all users in the system with a safe selection of fields.
+   * Excludes sensitive data like password_hash and tokens.
+   */
+  findAllUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isVerified: true,
+        isBanned: true,
+        isDelete: true,
+        created_at: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Bans a user by setting isBanned to true and recording the timestamp.
+   */
+  banUser(id: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        isBanned: true,
+        bannedAt: new Date(),
+        refreshToken: null,
+      },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        role: true,
+        isBanned: true,
+        bannedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Unbans a user by clearing the isBanned flag and bannedAt timestamp.
+   */
+  unbanUser(id: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        isBanned: false,
+        bannedAt: null,
+      },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        role: true,
+        isBanned: true,
+      },
+    });
+  }
+
   // ==================== Mutations ====================
 
   async createUserWithVerification(data: ICreateUserWithVerification) {
