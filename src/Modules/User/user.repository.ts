@@ -155,6 +155,23 @@ export class UserRepository {
     return user;
   }
 
+  clearProfileImage(id: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        profileImageUrl: null,
+        profileImagePublicId: null,
+      },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        profileImageUrl: true,
+      },
+    });
+  }
+
   async resendVerification(
     userId: string,
     email: string,

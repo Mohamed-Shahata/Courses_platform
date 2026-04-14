@@ -9,6 +9,7 @@ import { diskStorage } from 'multer';
 import { LessonRepository } from './lesson.repository';
 import { LessonProgressRepository } from './lessonProgress.repository';
 import { SectionModule } from '../sections/section.module';
+import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SectionModule } from '../sections/section.module';
     JwtModule,
     UserModule,
     SectionModule,
+    CloudinaryModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/video',

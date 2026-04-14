@@ -205,7 +205,7 @@ export class UserService {
    * @returns A success message and the updated user record (id, name, email, profileImage).
    * @throws {BadRequestException} If no user is found with the given ID.
    */
-  public async uploadProfile(id: string, profileImage: string) {
+  public async uploadAndUpdateProfile(id: string, profileImage: string) {
     const user = await this.userRepo.findById(id);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
@@ -218,9 +218,25 @@ export class UserService {
       publicId,
     );
 
+    if (user.profileImagePublicId)
+      await this.cloudinaryService.deleteImage(user.profileImagePublicId);
+
     return {
       message: USER_MESSAGES.UPDATE_PROFILEIMAGE_SUCCESSFUL,
       data: updatedUser,
     };
+  }
+
+  public async deleteProfileImage(id: string) {
+    const user = await this.userRepo.findById(id);
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    if (!user.profileImagePublicId)
+      throw new BadRequestException(USER_MESSAGES.YOU_HAVE_NOT_PROFILE_IMAGE);
+
+    await this.cloudinaryService.deleteImage(user.profileImagePublicId);
+    await this.userRepo.clearProfileImage(id);
+
+    return { message: USER_MESSAGES.DELETE_PROFILEIMAGE_SUCCESSFUL };
   }
 }
