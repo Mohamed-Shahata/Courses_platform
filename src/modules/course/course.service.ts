@@ -1,24 +1,27 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
-import { DataBaseService } from '../db/database.service';
 import {
   CATEGORY_MESSAGE,
   COURSE_MESSAGE,
   USER_MESSAGES,
 } from 'src/shared/constants/messages';
+import { InstructorRepository } from '../instructor/instructor.repository';
+import { CategoryRepository } from '../categories/category.repository';
+import { CourseRepository } from './course.repository';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
-  constructor(private prisma: DataBaseService) {}
+  constructor(
+    private courseRepo: CourseRepository,
+    private instRepo: InstructorRepository,
+    private categoryRepo: CategoryRepository,
+  ) {}
 
   public async createCourse(
     dto: CreateCourseDTO,
-    instId: string,
+    userId: string,
     thumbnail: string,
   ) {
     const {
@@ -31,37 +34,31 @@ export class CourseService {
       tags,
       categoryName,
     } = dto;
-    const instructor = await this.prisma.user.findUnique({
-      where: { id: instId },
-    });
+    const instructor = await this.instRepo.findByUserId(userId);
 
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    const category = await this.prisma.category.findUnique({
-      where: { name: categoryName },
-    });
+    const category = await this.categoryRepo.findByName(categoryName);
 
     if (!category)
       throw new NotFoundException(CATEGORY_MESSAGE.CATEGORY_NOT_FOUND);
 
-    const course = await this.prisma.course.create({
-      data: {
-        title,
-        description,
-        isFree,
-        price: isFree ? 0 : price,
-        language,
-        level,
-        thumbnail,
-        instructor: {
-          connect: { id: instId },
-        },
-        tags,
-        category: {
-          connect: {
-            name: categoryName,
-          },
+    const course = await this.courseRepo.create({
+      title,
+      description,
+      isFree,
+      price: isFree ? 0 : price,
+      language,
+      level,
+      thumbnail,
+      instructor: {
+        connect: { id: instructor.id },
+      },
+      tags,
+      category: {
+        connect: {
+          name: categoryName,
         },
       },
     });
@@ -69,15 +66,28 @@ export class CourseService {
     return { data: course };
   }
 
-  public async getAllCourses() {
-    const courses = await this.prisma.course.findMany();
+  public async getAllCourses(category?: string, tag?: string) {
+    const where: Prisma.CourseWhereInput = {};
+
+    if (category) {
+      where.category = {
+        name: category,
+      };
+    }
+
+    if (tag) {
+      where.tags = {
+        has: tag,
+      };
+    }
+
+    const courses = await this.courseRepo.findAll(where);
 
     return courses;
   }
+
   public async getCourseById(id: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id },
-    });
+    const course = await this.courseRepo.findById(id);
 
     if (!course)
       return {
@@ -85,87 +95,37 @@ export class CourseService {
       };
     return { data: course };
   }
-  public async getAllCoursesByInst(instId: string) {
-    const instructor = await this.prisma.user.findUnique({
-      where: { id: instId },
-    });
 
-    if (!instructor)
-      throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
-    const courses = await this.prisma.course.findMany({
-      where: { instructor },
-    });
-
-    return { data: courses };
-  }
-
-  public async filterCourses(category?: string, tag?: string) {
-    const courses = await this.prisma.course.findMany({
-      where: {
-        category: {
-          name: category,
-        },
-        tags: {
-          has: tag,
-        },
-      },
-    });
-
-    if (!courses)
-      throw new BadRequestException(COURSE_MESSAGE.NOT_FOUND_COURSE);
-    return { data: courses };
-  }
-
-  public async updateCourse(dto: UpdateCourseDTO, id: string, instId: string) {
-    const instructor = await this.prisma.user.findUnique({
-      where: { id: instId },
-    });
+  public async getAllCoursesByInst(userId: string) {
+    const instructor = await this.instRepo.findByUserId(userId);
 
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    const course = await this.prisma.course.update({
-      where: { id, instructorId: instId },
-      data: dto,
-    });
+    const courses = await this.courseRepo.findByInst(instructor.id);
+
+    return { data: courses };
+  }
+
+  public async updateCourse(dto: UpdateCourseDTO, id: string, userId: string) {
+    const instructor = await this.instRepo.findByUserId(userId);
+
+    if (!instructor)
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
+
+    const course = await this.courseRepo.update(id, instructor.id, dto);
 
     return { data: course };
   }
-  public async deleteCourse(id: string, instId: string) {
-    const instructor = await this.prisma.user.findUnique({
-      where: { id: instId },
-    });
+
+  public async deleteCourse(id: string, userId: string) {
+    const instructor = await this.instRepo.findByUserId(userId);
 
     if (!instructor)
       throw new NotFoundException(USER_MESSAGES.NOT_FOUND_ACCOUNT);
 
-    await this.prisma.course.delete({ where: { id, instructorId: instId } });
+    await this.courseRepo.delete(id, instructor.id);
 
     return { message: COURSE_MESSAGE.DELETE_SUCCESSFUL };
-  }
-
-  public async getCourseProgress(courseId: string, studentId: string) {
-    const totalLesson = await this.prisma.lesson.count({
-      where: { courseId },
-    });
-
-    const completeLesson = await this.prisma.lessonProgress.count({
-      where: {
-        studentId,
-        lesson: { courseId },
-        completed: true,
-      },
-    });
-
-    const progress =
-      totalLesson === 0 ? 0 : (completeLesson / totalLesson) * 100;
-
-    return {
-      data: {
-        totalLesson,
-        completeLesson,
-        progress: Math.round(progress),
-      },
-    };
   }
 }

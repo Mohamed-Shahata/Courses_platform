@@ -3,12 +3,19 @@ import { Type } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
 export class addLessonDTO {
-  @ApiProperty({ example: 'Introduction to Programming', description: 'Lesson title' })
+  @ApiProperty({
+    example: 'Introduction to Programming',
+    description: 'Lesson title',
+  })
   @IsString()
   @IsNotEmpty({ message: 'Title cannot be empty' })
   title: string;
 
-  @ApiProperty({ example: 1, description: 'Lesson order in the course', minimum: 0 })
+  @ApiProperty({
+    example: 1,
+    description: 'Lesson order in the Section',
+    minimum: 0,
+  })
   @Type(() => Number)
   @IsNumber()
   @Min(0, { message: 'Order must be 0 or greater' })

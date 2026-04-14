@@ -1,21 +1,26 @@
 import { BadGatewayException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../db/database.service';
 import { createQuizAttemptDTO } from './dto/createQuizAttempt.dto';
 import { QUIZ_MESSAGE } from 'src/shared/constants/messages';
+import { QuizRepository } from '../quiz/quiz.repository';
+import { QuestionRepository } from '../question/question.repository';
+import { QuizAttemptRepository } from './quizAttempt.repository';
+import { LessonProgressRepository } from '../lessons/lessonProgress.repository';
 
 @Injectable()
 export class QuizAttemptService {
-  constructor(private prisma: DataBaseService) {}
+  constructor(
+    private quizRepo: QuizRepository,
+    private questionRepo: QuestionRepository,
+    private quizAttemptRepo: QuizAttemptRepository,
+    private lessonProgressRepo: LessonProgressRepository,
+  ) {}
 
   public async submitQuiz(
-    studentId: string,
+    userId: string,
     dto: createQuizAttemptDTO,
     quizId: string,
   ) {
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id: quizId },
-      include: { questions: true, lesson: true },
-    });
+    const quiz = await this.quizRepo.find(quizId);
 
     if (!quiz) throw new BadGatewayException(QUIZ_MESSAGE.NO_QUIZ);
 
@@ -23,7 +28,9 @@ export class QuizAttemptService {
 
     let score = 0;
 
-    quiz.questions.forEach((question) => {
+    const questions = await this.questionRepo.findAllwithQuiz(quiz.id);
+
+    questions.forEach((question) => {
       const userAnswer = answer.find((a) => a.questionId === question.id);
 
       if (userAnswer && userAnswer.answer === question.correctAnswer) {
@@ -31,27 +38,39 @@ export class QuizAttemptService {
       }
     });
 
-    const total = quiz.questions.length;
+    const total = questions.length;
 
     const percentage = (score / total) * 100;
 
     const passed = percentage >= 60 ? true : false;
 
-    await this.prisma.quizAttempt.create({
-      data: {
-        quizId,
-        studentId,
-        score,
-        passed,
+    await this.quizAttemptRepo.create({
+      score,
+      passed,
+      quiz: {
+        connect: {
+          id: quizId,
+        },
+      },
+      student: {
+        connect: {
+          userId,
+        },
       },
     });
 
     if (passed) {
-      await this.prisma.lessonProgress.create({
-        data: {
-          studentId,
-          lessonId: quiz.lessonId,
-          completed: true,
+      await this.lessonProgressRepo.create({
+        completed: true,
+        student: {
+          connect: {
+            userId,
+          },
+        },
+        lesson: {
+          connect: {
+            id: quiz.lessonId!,
+          },
         },
       });
     }

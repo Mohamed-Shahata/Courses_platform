@@ -34,3 +34,9 @@ enum NOTIFICATION_TYPE {
   SYSTEM       
   MESSAGE      
 }
+
+enum QuizType {
+  LESSON 
+  COURSE
+}
+

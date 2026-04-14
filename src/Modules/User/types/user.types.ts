@@ -11,16 +11,6 @@ export interface ICreateUser {
   role: RoleUser;
 }
 
-export interface ICreateUserWithVerification {
-  first_name: string;
-  last_name: string;
-  email: string;
-  password_hash: string;
-  role: RoleUser;
-  phone: string;
-  token: string;
-}
-
 export interface IUpdateUser {
   first_name?: string;
   last_name?: string;
@@ -38,6 +28,10 @@ export interface IUpdateRefreshToken {
 export interface IRestoreAccount {
   isDelete: boolean;
   deleteAt: Date | null;
+}
+
+export interface IUpdateRole {
+  role: RoleUser;
 }
 
 // ========== UserToken ==========

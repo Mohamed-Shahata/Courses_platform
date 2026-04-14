@@ -14,10 +14,15 @@ import { JobModule } from './jobs/job.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { QuestionModule } from './modules/question/question.module';
 import { QuizAttemptModule } from './modules/quizAttempt/quizAttempt.module';
+import { StudentModule } from './modules/student/student.module';
+import { InstructorModule } from './modules/instructor/instructor.module';
+import { SectionModule } from './modules/sections/section.module';
 
 @Module({
   imports: [
     UserModule,
+    StudentModule,
+    InstructorModule,
     DataBaseModule,
     AuthModule,
     MailModule,
@@ -30,6 +35,7 @@ import { QuizAttemptModule } from './modules/quizAttempt/quizAttempt.module';
     QuizModule,
     QuestionModule,
     QuizAttemptModule,
+    SectionModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
