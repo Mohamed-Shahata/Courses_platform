@@ -107,3 +107,10 @@ export const QUESTION_MESSAGE = {
   NO_QUESTION_FOR_QUIZ: 'there is no question for this quiz',
   NO_QUESTION: 'there is no question',
 };
+
+export const NOTIFICATION_MESSAGES = {
+  NOT_FOUND: 'Notification not found.',
+  FORBIDDEN: 'You do not have permission to access this notification.',
+  DELETED: 'Notification deleted successfully.',
+  ALL_MARKED_READ: 'All notifications have been marked as read.',
+};
