@@ -106,11 +106,11 @@ export class UserController {
     description: 'Profile picture uploaded successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  public uploadProfile(
+  public uploadAndUpdateProfile(
     @CurrentUser('id') id: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
     if (!image) throw new BadRequestException('Image is empty');
-    return this.userService.uploadProfile(id, image.path);
+    return this.userService.uploadAndUpdateProfile(id, image.path);
   }
 }

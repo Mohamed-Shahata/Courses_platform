@@ -5,6 +5,7 @@ import { updateLessonDTO } from './dto/updateLesson.dto';
 import { updateLessonStatus } from './dto/updateLessonStatus.dto';
 import { LessonRepository } from './lesson.repository';
 import { SectionRepository } from '../sections/section.repository';
+import { CloudinaryService } from 'src/shared/cloudinary/cloudinary.service';
 
 /**
  * Service responsible for managing lessons within courses.
@@ -20,6 +21,7 @@ export class LessonService {
   constructor(
     private lessonRepo: LessonRepository,
     private sectionRepo: SectionRepository,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   /**
@@ -47,9 +49,13 @@ export class LessonService {
 
     const { title, order } = dto;
 
+    const { url, publicId } =
+      await this.cloudinaryService.uploadVideo(videoUrl);
+
     const lesson = await this.lessonRepo.create({
       title,
-      videoUrl,
+      videoUrl: url,
+      videoPublicId: publicId,
       order,
       section: {
         connect: {

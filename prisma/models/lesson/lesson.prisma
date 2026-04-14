@@ -3,6 +3,7 @@ model Lesson {
   title String
 
   videoUrl String
+  videoPublicId String
 
   status LessonStatus @default(PENDING)
 

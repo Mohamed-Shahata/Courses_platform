@@ -37,8 +37,8 @@ import {
 export class LessonController {
   constructor(private lessonService: LessonService) {}
 
-  // POST ~/lesson/create/:courseId
-  @Post('create/:courseId')
+  // POST ~/lesson/create/:sectionId
+  @Post('create/:sectionId')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('videoURL'))
