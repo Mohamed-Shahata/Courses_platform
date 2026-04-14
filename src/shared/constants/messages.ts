@@ -14,16 +14,17 @@ export const AUTH_MESSAGES = {
   INVALID_TOKEN: 'Invalid token',
   EMAIL_VERIFIED: 'Email verified successfully',
 
-  ACCOUNT_NOT_FOUND: 'No account found with this email',
+  INVALID_EMAIL_OR_PASSWORD: 'Invalid email or password',
   EMAIL_NOT_VERIFIED: 'This email is not verified. Check your inbox',
 
-  INCORRECT_PASSWORD: 'Incorrect password',
   EMAIL_OR_PASSWORD_IS_WRONG: 'Email or password is wrong',
   CURRENT_PASSWORD_INCORRECT: 'Current password incorrect',
   NEW_PASSWORD_AND_CONFIRM_PASSWORD_NOT_MATCHING:
     'New password and confirm password is not matching',
 
   LOGIN_SUCCESS: 'Login successful',
+
+  ACCOUNT_NOT_FOUND: 'No account found with this email',
 
   ACCESS_DENIED: 'Access denied',
   INVALID_REFRESH_TOKEN: 'Invalid refresh token',
@@ -42,6 +43,11 @@ export const AUTH_MESSAGES = {
   ACCOUNT_RESTORE: 'Account restore successful , can login now! ',
 
   CANNOT_USE_OLD_PASSWORD: 'You cannot use your old password',
+
+  RESET_LINK: 'If this email exists, we sent a reset link',
+
+  CREATE_ACCOUNT_SECCUSSFUL_BUT_NEED_ROLE:
+    ' account create successful, choose ypur role',
 };
 
 export const USER_MESSAGES = {
@@ -61,6 +67,11 @@ export const COURSE_MESSAGE = {
   IMAGE_COURSE_EMPTY: 'Image course is empty',
   DELETE_SUCCESSFUL: 'Course delete successful ',
   NOT_FOUND_COURSE: 'Not Found Course',
+};
+
+export const SECTION_MESSAGE = {
+  NOT_FOUND_SECTION: ' Not found section',
+  DELETE_SECTION: 'Delete Section successful',
 };
 
 export const ENROLLMENT_MESSAGE = {

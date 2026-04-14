@@ -6,9 +6,13 @@ import { MailModule } from '../../shared/mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
-import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { UserModule } from '../user/user.module';
 import { UserTokenRepository } from './userToken.repository';
+import { GoogleStratgy } from './strategies/google.strategy';
+import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
+import { StudentModule } from '../student/student.module';
+import { InstructorModule } from '../instructor/instructor.module';
+import { OutBoxRepository } from './outbox.repository';
 
 @Module({
   imports: [
@@ -29,8 +33,16 @@ import { UserTokenRepository } from './userToken.repository';
     DataBaseModule,
     MailModule,
     UserModule,
+    StudentModule,
+    InstructorModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, UserTokenRepository],
+  providers: [
+    AuthService,
+    UserTokenRepository,
+    OutBoxRepository,
+    GoogleStratgy,
+    RefreshTokenStrategy,
+  ],
 })
 export class AuthModule {}

@@ -6,12 +6,16 @@ import { LessonController } from './lesson.controller';
 import { UserModule } from '../user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { LessonRepository } from './lesson.repository';
+import { LessonProgressRepository } from './lessonProgress.repository';
+import { SectionModule } from '../sections/section.module';
 
 @Module({
   imports: [
     DataBaseModule,
     JwtModule,
     UserModule,
+    SectionModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/video',
@@ -26,7 +30,8 @@ import { diskStorage } from 'multer';
       },
     }),
   ],
-  providers: [LessonService],
+  providers: [LessonService, LessonRepository, LessonProgressRepository],
   controllers: [LessonController],
+  exports: [LessonRepository, LessonProgressRepository],
 })
 export class LessonModule {}

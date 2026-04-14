@@ -4,10 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { DataBaseService } from '../db/database.service';
 import { RegisterDTO } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
-import { MailService } from '../../shared/mail/mail.service';
 import { LoginDTO } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { StringValue } from 'ms';
@@ -21,6 +19,15 @@ import { ChangePasswordDto } from './dto/changePassword.dto';
 import { restoreAccountDTO } from './dto/restoreAccount.dto';
 import { UserRepository } from '../user/user.repository';
 import { UserTokenRepository } from './userToken.repository';
+import { StudentRepository } from '../student/student.repository';
+import { InstructorRepository } from '../instructor/instructor.repository';
+import { OutBoxRepository } from './outbox.repository';
+import { TransactionService } from '../db/transaction.service';
+import { RoleUser } from 'src/shared/enums/RoleUser.enum';
+import { EVENT_TYPE } from '../../../generated/prisma/enums';
+import { mintesToMilliseconds } from 'src/shared/utils/cookie.util';
+import { randomBytes } from 'node:crypto';
+import { SelectRoleDto } from './dto/selectRole.dto';
 
 /**
  * Service responsible for all authentication-related business logic.
@@ -35,9 +42,12 @@ export class AuthService {
   constructor(
     private userRepo: UserRepository,
     private config: ConfigService,
-    private mailService: MailService,
     private jwtService: JwtService,
     private userTokenRepo: UserTokenRepository,
+    private outBoxRepo: OutBoxRepository,
+    private studentRepo: StudentRepository,
+    private instructorRepo: InstructorRepository,
+    private transactionService: TransactionService,
   ) {}
 
   /**
@@ -68,19 +78,50 @@ export class AuthService {
     if (user) throw new ConflictException(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS);
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const verificationToken = generateToken();
+    const token = generateToken();
 
-    await this.userRepo.createUserWithVerification({
-      email,
-      first_name,
-      last_name,
-      password_hash: passwordHash,
-      phone,
-      role,
-      token: verificationToken,
+    return this.transactionService.runInTransaction(async (tx) => {
+      const user = await this.userRepo.createUser(
+        {
+          first_name,
+          last_name,
+          email,
+          role,
+          phone,
+          password_hash: passwordHash,
+        },
+        tx,
+      );
+
+      if (role === RoleUser.INSTRUCTOR) {
+        await this.instructorRepo.createInst(user.id, tx);
+      } else {
+        await this.studentRepo.createStudent(user.id, tx);
+      }
+
+      await this.userTokenRepo.create(
+        {
+          userId: user.id,
+          token,
+          type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+        },
+        tx,
+      );
+
+      await this.outBoxRepo.create(
+        {
+          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+          payload: {
+            email,
+            token,
+          },
+        },
+        tx,
+      );
+
+      return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
     });
-
-    return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
   }
 
   /**
@@ -101,10 +142,12 @@ export class AuthService {
     if (record.expiresAt < new Date())
       throw new BadRequestException(AUTH_MESSAGES.TOKEN_EXPORED);
 
-    await this.userRepo.verifyEmail(record.userId);
+    return this.transactionService.runInTransaction(async (tx) => {
+      await this.userRepo.verifyEmail(record.userId, tx);
 
-    await this.userTokenRepo.deleteById(record.token);
-    return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
+      await this.userTokenRepo.deleteById(record.token, tx);
+      return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
+    });
   }
 
   /**
@@ -128,16 +171,23 @@ export class AuthService {
   public async login(dto: LoginDTO) {
     const { email, password } = dto;
 
+    const fakeHash = '$2b$10$abcdefghijklmnopqrstuv1234567890';
+
     const user = await this.userRepo.findByEmail(email);
-    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    let isValid = false;
+    if (user) {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    } else {
+      isValid = await bcrypt.compare(password, fakeHash);
+    }
+    if (!user || !isValid)
+      throw new BadRequestException(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
+
     if (user.isDelete)
       throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_DELETE);
     if (!user.isVerified)
       throw new BadRequestException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
-
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch)
-      throw new BadRequestException(AUTH_MESSAGES.EMAIL_OR_PASSWORD_IS_WRONG);
 
     const payload: JwtPayloadType = { id: user.id, role: user.role };
     const accessToken = await this.jwtService.signAsync(payload);
@@ -164,22 +214,55 @@ export class AuthService {
    * @returns A success message confirming account restoration.
    * @throws {BadRequestException} If no account is found with the given email.
    */
-  public async restoreAccount(dto: restoreAccountDTO) {
+  public async requsetRestore(dto: restoreAccountDTO) {
     const { email } = dto;
 
     const user = await this.userRepo.findByEmail(email);
-    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
     // must check account is deleted or not
-    if (!user.isDelete)
-      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_DELETED);
+    if (user && user.isDelete) {
+      const token = generateToken();
 
-    await this.userRepo.restoreAccount(email, {
-      isDelete: false,
-      deleteAt: null,
+      await this.transactionService.runInTransaction(async (tx) => {
+        await this.userTokenRepo.create(
+          {
+            userId: user.id,
+            token,
+            type: EVENT_TYPE.SEND_RESTORE_ACCOUNT,
+            expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+          },
+          tx,
+        );
+
+        await this.outBoxRepo.create(
+          {
+            event_type: EVENT_TYPE.SEND_RESTORE_ACCOUNT,
+            payload: {
+              email,
+              token,
+            },
+          },
+          tx,
+        );
+      });
+    }
+
+    return { message: AUTH_MESSAGES.RESET_LINK };
+  }
+
+  public async confirmRestore(token: string) {
+    const record = await this.userTokenRepo.findByToken(token);
+
+    if (!record) throw new BadRequestException(AUTH_MESSAGES.INVALID_TOKEN);
+    if (record.expiresAt < new Date())
+      throw new BadRequestException(AUTH_MESSAGES.TOKEN_EXPORED);
+
+    return this.transactionService.runInTransaction(async (tx) => {
+      await this.userRepo.restoreAccount(record.userId, tx);
+
+      await this.userTokenRepo.deleteById(record.token, tx);
+      return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
     });
-
-    return { message: AUTH_MESSAGES.ACCOUNT_RESTORE };
   }
 
   /**
@@ -209,7 +292,10 @@ export class AuthService {
     if (!isMatch)
       throw new BadRequestException(AUTH_MESSAGES.INVALID_REFRESH_TOKEN);
 
-    const accessToken = await this.jwtService.signAsync({ id: user.id });
+    const accessToken = await this.jwtService.signAsync({
+      id: user.id,
+      role: user.role,
+    });
 
     return { data: { accessToken } };
   }
@@ -229,26 +315,41 @@ export class AuthService {
     const { email } = dto;
 
     const user = await this.userRepo.findByEmail(email);
-    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
-    if (user.isVerified)
-      throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_VERIFIED);
 
-    const emailVerify = await this.userTokenRepo.findByUserIdAndType({
-      userId: user.id,
-      type: 'SEND_VERIFICATION_EMAIL',
-    });
+    if (user && !user.isVerified) {
+      await this.transactionService.runInTransaction(async (tx) => {
+        const emailVerify = await this.userTokenRepo.findByUserIdAndType({
+          userId: user.id,
+          type: 'SEND_VERIFICATION_EMAIL',
+        });
 
-    if (emailVerify) {
-      await this.userTokenRepo.deleteById(emailVerify.id);
+        if (emailVerify) {
+          await this.userTokenRepo.deleteById(emailVerify.id, tx);
+        }
+
+        const token = generateToken();
+        await this.userTokenRepo.create(
+          {
+            userId: user.id,
+            token,
+            type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+            expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+          },
+          tx,
+        );
+
+        await this.outBoxRepo.create(
+          {
+            event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
+            payload: {
+              email,
+              token,
+            },
+          },
+          tx,
+        );
+      });
     }
-
-    const verificationToken = generateToken();
-
-    await this.userRepo.resendVerification(
-      user.id,
-      user.email,
-      verificationToken,
-    ); // user object here
 
     return { message: AUTH_MESSAGES.VERIFICATION_EMAIL_SENT };
   }
@@ -288,15 +389,33 @@ export class AuthService {
     const { email } = dto;
 
     const user = await this.userRepo.findByEmail(email);
-    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    const token = generateToken();
+    if (user) {
+      await this.transactionService.runInTransaction(async (tx) => {
+        const token = generateToken();
 
-    await this.userRepo.forgotPassword({
-      userId: user.id,
-      email: user.email,
-      token,
-    });
+        await this.userTokenRepo.create(
+          {
+            userId: user.id,
+            token,
+            type: EVENT_TYPE.SEND_RESET_PASSWORD,
+            expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
+          },
+          tx,
+        );
+
+        await this.outBoxRepo.create(
+          {
+            event_type: EVENT_TYPE.SEND_RESET_PASSWORD,
+            payload: {
+              email,
+              token,
+            },
+          },
+          tx,
+        );
+      });
+    }
 
     return {
       message: AUTH_MESSAGES.WE_HAVE_SENT_A_PASSWORD_CHANGE_LINK_TO_YOUR_EMAIL,
@@ -343,12 +462,17 @@ export class AuthService {
       throw new BadRequestException(AUTH_MESSAGES.CANNOT_USE_OLD_PASSWORD);
 
     const hash = await bcrypt.hash(newPassword, 10);
+    return this.transactionService.runInTransaction(async (tx) => {
+      await this.userRepo.updatePassword(
+        reset.userId,
+        { password_hash: hash },
+        tx,
+      );
 
-    await this.userRepo.updatePassword(reset.userId, { password_hash: hash });
+      await this.userTokenRepo.deleteById(reset.id, tx);
 
-    await this.userTokenRepo.deleteById(reset.id);
-
-    return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
+      return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
+    });
   }
 
   /**
@@ -392,5 +516,103 @@ export class AuthService {
     await this.userRepo.updatePassword(userId, { password_hash: hash });
 
     return { message: AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESSFULL };
+  }
+
+  public async GoogleAuthRedirect(
+    email: string,
+    first_name: string,
+    last_name: string,
+  ) {
+    const user = await this.userRepo.findByEmail(email);
+
+    if (!user) {
+      const password = randomBytes(12).toString('hex');
+
+      const hash = await bcrypt.hash(password, 10);
+
+      const user = await this.userRepo.createUser({
+        first_name,
+        last_name,
+        email,
+        phone: '',
+        role: RoleUser.STUDENT,
+        password_hash: hash,
+      });
+
+      return {
+        needRole: true,
+        userId: user.id,
+        token: null,
+      };
+    }
+
+    const payload: JwtPayloadType = { id: user.id, role: user.role };
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.config.get<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as StringValue,
+    });
+
+    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+    await this.transactionService.runInTransaction(async (tx) => {
+      await this.userRepo.updateRefreshToken(
+        user.id,
+        {
+          refreshToken: Hrefresh,
+        },
+        tx,
+      );
+
+      if (!user.isVerified) {
+        await this.userRepo.verifyEmail(user.id, tx);
+      }
+      if (user.isDelete) {
+        await this.userRepo.restoreAccount(user.id, tx);
+      }
+    });
+
+    return {
+      token: { refreshToken },
+      needRole: false,
+      userId: null,
+    };
+  }
+
+  public async selectRole(userId: string, dto: SelectRoleDto) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
+    const { role } = dto;
+    const payload: JwtPayloadType = { id: user.id, role };
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.config.get<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as StringValue,
+    });
+
+    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+
+    return this.transactionService.runInTransaction(async (tx) => {
+      await this.userRepo.updateRole(user.id, { role }, tx);
+
+      await this.userRepo.updateRefreshToken(
+        user.id,
+        {
+          refreshToken: Hrefresh,
+        },
+        tx,
+      );
+
+      return {
+        message: AUTH_MESSAGES.LOGIN_SUCCESS,
+        accessToken,
+        refreshToken,
+      };
+    });
   }
 }

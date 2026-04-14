@@ -2,12 +2,18 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class updateLessonDTO {
-  @ApiPropertyOptional({ example: 'Updated Lesson Title', description: 'Lesson title' })
+  @ApiPropertyOptional({
+    example: 'Updated Lesson Title',
+    description: 'Lesson title',
+  })
   @IsString()
   @IsOptional()
   title: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/video.mp4', description: 'Video URL' })
+  @ApiPropertyOptional({
+    example: 'https://example.com/video.mp4',
+    description: 'Video URL',
+  })
   @IsString()
   @IsOptional()
   videoUrl: string;

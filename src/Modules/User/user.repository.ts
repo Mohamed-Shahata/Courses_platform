@@ -7,10 +7,11 @@ import {
   IUpdateRefreshToken,
   IRestoreAccount,
   ICreateUserToken,
-  ICreateUserWithVerification,
+  IUpdateRole,
 } from './types/user.types';
 import { EVENT_TYPE, ROLE } from '../../../generated/prisma/client';
 import { mintesToMilliseconds } from '../../shared/utils/cookie.util';
+import { Prisma } from '@prisma/client';
 
 /**
  * Repository responsible for all direct database operations on the User model.
@@ -137,43 +138,21 @@ export class UserRepository {
 
   // ==================== Mutations ====================
 
-  async createUserWithVerification(data: ICreateUserWithVerification) {
-    return this.prisma.$transaction(async (tx) => {
-      // 1. create user
-      const user = await tx.user.create({
-        data: {
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          password_hash: data.password_hash,
-          role: data.role,
-          phone: data.phone,
-        },
-      });
+  async createUser(data: ICreateUser, tx?: Prisma.TransactionClient) {
+    const prismaClient = tx ?? this.prisma;
 
-      // 2. create verification token
-      await tx.userToken.create({
-        data: {
-          userId: user.id,
-          token: data.token,
-          type: 'SEND_VERIFICATION_EMAIL',
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-        },
-      });
-
-      // 3. create outbox event
-      await tx.outbox.create({
-        data: {
-          event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
-          payload: {
-            email: data.email,
-            token: data.token,
-          },
-        },
-      });
-
-      return user;
+    const user = await prismaClient.user.create({
+      data: {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        password_hash: data.password_hash,
+        role: data.role,
+        phone: data.phone,
+      },
     });
+
+    return user;
   }
 
   async resendVerification(
@@ -195,26 +174,6 @@ export class UserRepository {
         data: {
           event_type: EVENT_TYPE.SEND_VERIFICATION_EMAIL,
           payload: { email, token: verificationToken },
-        },
-      });
-    });
-  }
-
-  async forgotPassword(data: { userId: string; token: string; email: string }) {
-    await this.prisma.$transaction(async (pr) => {
-      await pr.userToken.create({
-        data: {
-          userId: data.userId,
-          token: data.token,
-          type: 'SEND_RESET_PASSWORD',
-          expiresAt: new Date(Date.now() + mintesToMilliseconds(15)),
-        },
-      });
-
-      await pr.outbox.create({
-        data: {
-          event_type: EVENT_TYPE.SEND_RESET_PASSWORD,
-          payload: { email: data.email, token: data.token },
         },
       });
     });
@@ -243,23 +202,44 @@ export class UserRepository {
     });
   }
 
-  updatePassword(id: string, data: IUpdatePassword) {
-    return this.prisma.user.update({ where: { id }, data });
+  updatePassword(
+    id: string,
+    data: IUpdatePassword,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx ?? this.prisma;
+    return prismaClient.user.update({ where: { id }, data });
   }
 
-  updateRefreshToken(id: string, data: IUpdateRefreshToken) {
-    return this.prisma.user.update({ where: { id }, data });
+  updateRefreshToken(
+    id: string,
+    data: IUpdateRefreshToken,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx ?? this.prisma;
+
+    return prismaClient.user.update({ where: { id }, data });
   }
 
-  verifyEmail(id: string) {
-    return this.prisma.user.update({
+  verifyEmail(id: string, tx: Prisma.TransactionClient) {
+    return tx.user.update({
       where: { id },
       data: { isVerified: true },
     });
   }
 
-  restoreAccount(email: string, data: IRestoreAccount) {
-    return this.prisma.user.update({ where: { email }, data });
+  restoreAccount(email: string, tx: Prisma.TransactionClient) {
+    return tx.user.update({
+      where: { email },
+      data: { isDelete: false, deleteAt: null },
+    });
+  }
+
+  updateRole(id: string, data: IUpdateRole, tx: Prisma.TransactionClient) {
+    return tx.user.update({
+      where: { id },
+      data,
+    });
   }
 
   softDelete(id: string) {

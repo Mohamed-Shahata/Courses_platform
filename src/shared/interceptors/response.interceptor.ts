@@ -55,12 +55,17 @@ export class ResponseInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse();
 
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        status: response.statusCode || HttpStatus.OK,
-        message: data?.message || null,
-        data: data?.data || null,
-      })),
+      map((data) => {
+        if (!data || response.headersSent) {
+          return data;
+        }
+        return {
+          success: true,
+          status: response.statusCode || HttpStatus.OK,
+          message: data?.message || null,
+          data: data?.data || null,
+        };
+      }),
     );
   }
 }

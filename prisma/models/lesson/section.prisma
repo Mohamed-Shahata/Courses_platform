@@ -1,8 +1,15 @@
 
-model LessonSession {
+model Section {
   id String @id @default(uuid())
+  title     String
+
   lessons Lesson[]
   
   courseId String
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  order     Int 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

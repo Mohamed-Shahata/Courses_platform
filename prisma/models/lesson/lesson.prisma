@@ -13,9 +13,6 @@ model Lesson {
 
   lessonProgresses LessonProgress[]
 
-  courseId  String
-  course Course? @relation(fields: [courseId ], references: [id])
-
-  lessonSessionId  String
-  lessonSessions LessonSession? @relation(fields: [lessonSessionId ], references: [id])
+  sectionId  String
+  section Section @relation(fields: [sectionId], references: [id])
 }

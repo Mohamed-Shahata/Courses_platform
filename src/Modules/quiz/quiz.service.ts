@@ -1,73 +1,53 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../db/database.service';
 import { createQuizDTO } from './dto/createQuiz.dto';
 import { LESSON_MESSAGE, QUIZ_MESSAGE } from 'src/shared/constants/messages';
+import { LessonRepository } from '../lessons/lesson.repository';
+import { QuizRepository } from './quiz.repository';
 
 @Injectable()
 export class QuizService {
-  constructor(private prisma: DataBaseService) {}
+  constructor(
+    private quizRepo: QuizRepository,
+    private lessonRepo: LessonRepository,
+  ) {}
 
   public async createQuiz(
     dto: createQuizDTO,
     lessonId: string,
-    instructorId: string,
+    userId: string,
   ) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId, course: { instructorId } },
-    });
-
+    const lesson = await this.lessonRepo.findByIdByUserId(lessonId, userId);
     if (!lesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
 
-    const quiz = await this.prisma.quiz.create({
-      data: {
-        name: dto.name,
-        instructorId,
-        lessonId: lessonId,
-      },
+    const quiz = await this.quizRepo.create({
+      name: dto.name,
+      type: dto.type,
+      lesson: { connect: { id: lesson.id } },
     });
 
     return { data: quiz };
   }
 
-  public async getAllQuizByCourse(courseId: string) {
-    const quizes = await this.prisma.course.findUnique({
-      where: { id: courseId },
-      include: {
-        lessonSessions: {
-          include: {
-            lessons: {
-              include: {
-                quiz: true,
-              },
-            },
-          },
-        },
-      },
-    });
+  public async getAllQuizBySection(sectionId: string) {
+    const quizes = await this.quizRepo.findManyOfSection(sectionId);
 
     return { data: quizes };
   }
 
   public async getQuizByLesson(lessonId: string) {
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { lessonId },
-    });
+    const quiz = await this.quizRepo.findByLesson(lessonId);
 
     if (!quiz) throw new BadRequestException(QUIZ_MESSAGE.NO_QUIZ_FOR_LESSON);
 
     return { data: quiz };
   }
 
-  public async deleteQuiz(id: string, instructorId: string) {
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id, instructorId },
-    });
+  public async deleteQuiz(id: string, userId: string) {
+    const quiz = await this.quizRepo.findByIdAndUser(id, userId);
 
     if (!quiz) throw new BadRequestException(QUIZ_MESSAGE.NO_QUIZ);
 
-    await this.prisma.quiz.delete({
-      where: { id },
-    });
+    await this.quizRepo.delete(id);
 
     return { message: QUIZ_MESSAGE.DELETE_QUIZ };
   }
