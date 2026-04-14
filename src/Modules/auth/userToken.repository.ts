@@ -4,13 +4,26 @@ import {
   ICreateUserToken,
   IFindByUserIdAndType,
 } from './types/userToken.types';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserTokenRepository {
   constructor(private prisma: DataBaseService) {}
 
-  create(data: ICreateUserToken) {
-    return this.prisma.userToken.create({ data });
+  create(data: ICreateUserToken, tx: Prisma.TransactionClient) {
+    return tx.userToken.create({
+      data: {
+        token: data.token,
+        type: data.type,
+        expiresAt: data.expiresAt,
+
+        User: {
+          connect: {
+            id: data.userId,
+          },
+        },
+      },
+    });
   }
 
   findByToken(token: string) {
@@ -28,8 +41,8 @@ export class UserTokenRepository {
     });
   }
 
-  deleteById(id: string) {
-    return this.prisma.userToken.delete({ where: { id } });
+  deleteById(id: string, tx: Prisma.TransactionClient) {
+    return tx.userToken.delete({ where: { id } });
   }
 
   deleteByToken(token: string) {

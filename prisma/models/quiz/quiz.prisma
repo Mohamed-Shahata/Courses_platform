@@ -1,13 +1,15 @@
 model Quiz {
   id        String   @id @default(uuid())
 
-  name      String?
+  name      String
 
-  lessonId  String   @unique
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  type      QuizType
 
-  instructorId  String   @unique
-  instructor    Instructor   @relation(fields: [instructorId], references: [id])
+  courseId  String?  @unique
+  course    Course?  @relation(fields: [courseId], references: [id])
+
+  lessonId  String?   @unique
+  lesson    Lesson?   @relation(fields: [lessonId], references: [id])
 
   createdAt DateTime @default(now())
 

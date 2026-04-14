@@ -82,32 +82,28 @@ export class CourseController {
   //GET ~/courses
   @Get('')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all courses' })
-  @ApiResponse({ status: 200, description: 'Returns all courses' })
-  public getAllCourses() {
-    return this.courseService.getAllCourses();
+  @ApiOperation({
+    summary: 'Get all courses and Filter courses by category or tag',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all courses or filtered courses',
+  })
+  public getAllCourses(
+    @Query('category') category?: string,
+    @Query('tag') tag?: string,
+  ) {
+    return this.courseService.getAllCourses(category, tag);
   }
 
   //GET ~/courses/inst
   @Get('inst')
   @Roles(ROLE.INSTRUCTOR)
   @UseGuards(AuthRoleGuard)
-  @ApiOperation({ summary: 'Get all courses by instructor (Instructor only)' })
+  @ApiOperation({ summary: 'Get all courses by instructor (Instructor only) ' })
   @ApiResponse({ status: 200, description: 'Returns instructor courses' })
   public getAllCoursesByInst(@CurrentUser('id') id: string) {
     return this.courseService.getAllCoursesByInst(id);
-  }
-
-  //GET ~/courses/filter
-  @Get('filter')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Filter courses by category or tag' })
-  @ApiResponse({ status: 200, description: 'Returns filtered courses' })
-  public filterCourses(
-    @Query('category') category?: string,
-    @Query('tag') tag?: string,
-  ) {
-    return this.courseService.filterCourses(category, tag);
   }
 
   //GET ~/courses/:id
@@ -148,16 +144,5 @@ export class CourseController {
     @Param('id') id: string,
   ) {
     return this.courseService.deleteCourse(id, instId);
-  }
-
-  // Get ~course/progress/:courseId
-  @Get('progress/:courseId')
-  @Roles(ROLE.STUDENT)
-  @UseGuards(AuthRoleGuard)
-  public progressCourse(
-    @CurrentUser('id') id: string,
-    @Param('courseId') courseId: string,
-  ) {
-    return this.courseService.getCourseProgress(courseId, id);
   }
 }

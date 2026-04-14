@@ -25,7 +25,7 @@ model Course {
 
   reviews Review[]
 
-  lessonSessions LessonSession[]
+  sections Section[]
 
-  lessons Lesson[]
+  quiz Quiz?
 }

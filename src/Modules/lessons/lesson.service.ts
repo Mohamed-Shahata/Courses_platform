@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DataBaseService } from '../db/database.service';
 import { addLessonDTO } from './dto/addLesson.dto';
-import { COURSE_MESSAGE, LESSON_MESSAGE } from 'src/shared/constants/messages';
+import { LESSON_MESSAGE, SECTION_MESSAGE } from 'src/shared/constants/messages';
 import { updateLessonDTO } from './dto/updateLesson.dto';
 import { updateLessonStatus } from './dto/updateLessonStatus.dto';
+import { LessonRepository } from './lesson.repository';
+import { SectionRepository } from '../sections/section.repository';
 
 /**
  * Service responsible for managing lessons within courses.
@@ -16,7 +17,10 @@ import { updateLessonStatus } from './dto/updateLessonStatus.dto';
  */
 @Injectable()
 export class LessonService {
-  constructor(private prisma: DataBaseService) {}
+  constructor(
+    private lessonRepo: LessonRepository,
+    private sectionRepo: SectionRepository,
+  ) {}
 
   /**
    * Creates a new lesson under a specific course.
@@ -33,39 +37,43 @@ export class LessonService {
    */
   public async createLesson(
     dto: addLessonDTO,
-    instId: string,
-    courseId: string,
+    userId: string,
     videoUrl: string,
-    lessonSessionId: string,
+    sectionId: string,
   ) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId, instructorId: instId },
-    });
-    if (!course) throw new BadRequestException(COURSE_MESSAGE.NOT_FOUND_COURSE);
+    const section = await this.sectionRepo.findByIdUser(sectionId, userId);
+    if (!section)
+      throw new BadRequestException(SECTION_MESSAGE.NOT_FOUND_SECTION);
 
     const { title, order } = dto;
 
-    const lesson = await this.prisma.lesson.create({
-      data: { title, videoUrl, order, courseId, lessonSessionId },
+    const lesson = await this.lessonRepo.create({
+      title,
+      videoUrl,
+      order,
+      section: {
+        connect: {
+          id: sectionId,
+        },
+      },
     });
 
     return { data: lesson };
   }
 
   /**
-   * Retrieves all lessons belonging to a specific course.
+   * Retrieves all lessons belonging to a specific section.
    *
-   * @param courseId - The unique identifier of the course.
-   * @returns An object containing an array of lesson records for the course.
-   * @throws {BadRequestException} If the course is not found.
+   * @param courseId - The unique identifier of the section.
+   * @returns An object containing an array of lesson records for the section.
+   * @throws {BadRequestException} If the section is not found.
    */
-  public async getAlllessonWithCourse(courseId: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
-    if (!course) throw new BadRequestException(COURSE_MESSAGE.NOT_FOUND_COURSE);
+  public async getAlllessonWithSection(sectionId: string) {
+    const section = await this.sectionRepo.find(sectionId);
+    if (!section)
+      throw new BadRequestException(SECTION_MESSAGE.NOT_FOUND_SECTION);
 
-    const lessons = await this.prisma.lesson.findMany({ where: { courseId } });
+    const lessons = await this.lessonRepo.findAllWithSection(sectionId);
 
     return { data: lessons };
   }
@@ -78,7 +86,7 @@ export class LessonService {
    * @throws {BadRequestException} If no lesson is found with the given ID.
    */
   public async getLessonById(id: string) {
-    const lesson = await this.prisma.lesson.findUnique({ where: { id } });
+    const lesson = await this.lessonRepo.findById(id);
     if (!lesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
 
     return { data: lesson };
@@ -94,11 +102,8 @@ export class LessonService {
    * @returns An object containing the updated lesson record.
    * @throws {BadRequestException} If no lesson is found with the given ID.
    */
-  public async updateLesson(dto: updateLessonDTO, id: string) {
-    const Nlesson = await this.prisma.lesson.update({
-      where: { id },
-      data: dto,
-    });
+  public async updateLesson(dto: updateLessonDTO, id: string, userId: string) {
+    const Nlesson = await this.lessonRepo.update(dto, id, userId);
 
     if (!Nlesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
 
@@ -112,11 +117,11 @@ export class LessonService {
    * @returns A success message confirming deletion.
    * @throws {BadRequestException} If no lesson is found with the given ID.
    */
-  public async deleteLesson(id: string) {
-    const lesson = await this.prisma.lesson.findUnique({ where: { id } });
+  public async deleteLesson(id: string, userId: string) {
+    const lesson = await this.lessonRepo.findById(id);
     if (!lesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
 
-    await this.prisma.lesson.delete({ where: { id } });
+    await this.lessonRepo.delete(id, userId);
 
     return { message: LESSON_MESSAGE.DELETE_SUCCESSFUL };
   }
@@ -133,10 +138,7 @@ export class LessonService {
    * @throws {BadRequestException} If no lesson is found with the given ID.
    */
   public async updateLessonStatus(lessonId: string, dto: updateLessonStatus) {
-    const lesson = await this.prisma.lesson.update({
-      where: { id: lessonId },
-      data: dto,
-    });
+    const lesson = await this.lessonRepo.updateStatus(dto, lessonId);
 
     if (!lesson) throw new BadRequestException(LESSON_MESSAGE.NO_LESSON);
 

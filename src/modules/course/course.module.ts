@@ -6,13 +6,20 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { InstructorModule } from '../instructor/instructor.module';
+import { CategoryModule } from '../categories/category.module';
+import { LessonModule } from '../lessons/lesson.module';
+import { CourseRepository } from './course.repository';
 @Module({
-  providers: [CourseService],
+  providers: [CourseService, CourseRepository],
   controllers: [CourseController],
   imports: [
     DataBaseModule,
     JwtModule,
     UserModule,
+    InstructorModule,
+    CategoryModule,
+    LessonModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/image',
@@ -27,5 +34,6 @@ import { diskStorage } from 'multer';
       },
     }),
   ],
+  exports: [CourseRepository],
 })
 export class CourseModule {}

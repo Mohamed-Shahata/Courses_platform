@@ -33,10 +33,10 @@ export class QuizController {
   }
 
   //Get ~/quiz/all/:courseId
-  @Get('all/:courseId')
+  @Get('all/:sectionId')
   @UseGuards(AuthRoleGuard)
-  public async getAllQuizWithCourse(@Param('courseId') courseId: string) {
-    return this.quizService.getAllQuizByCourse(courseId);
+  public async getAllQuizWithCourse(@Param('sectionId') sectionId: string) {
+    return this.quizService.getAllQuizBySection(sectionId);
   }
 
   //Get ~/quiz/:lessonId

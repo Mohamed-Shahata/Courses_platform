@@ -35,11 +35,20 @@ import {
   ApiCookieAuth,
 } from '@nestjs/swagger';
 import { StatusCode } from 'src/shared/enums/statusCode.enum';
+import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { GoogleGuard } from './guards/google.guard';
+import { SelectRoleDto } from './dto/selectRole.dto';
 
 interface RequestWithCookies extends Request {
   cookies: {
     refreshToken?: string;
   };
+}
+
+interface GoogleAuth {
+  email: string;
+  first_name: string;
+  last_name: string;
 }
 
 @ApiTags('Auth')
@@ -118,17 +127,38 @@ export class AuthController {
     return { message, data: { accessToken } };
   }
 
-  // Patch => ~/auth/restore
-  @Patch('restore')
+  // Post => ~/auth/restore/request
+  @Post('restore/request')
   @HttpCode(StatusCode.OK)
-  @ApiOperation({ summary: 'Restore a previously deleted account' })
-  @ApiResponse({ status: 200, description: 'Account restored successfully' })
+  @ApiOperation({ summary: 'Send restore email' })
+  @ApiResponse({ status: 200, description: 'Restore email sent successfully' })
   @ApiResponse({ status: 404, description: 'Account not found' })
-  public async restoreAccount(@Body() body: restoreAccountDTO) {
-    return this.authService.restoreAccount(body);
+  public async requestRestore(@Body() body: restoreAccountDTO) {
+    return this.authService.requsetRestore(body);
+  }
+
+  // Post => ~/auth/restore/confirm
+  @Post('restore/confirm')
+  @HttpCode(StatusCode.OK)
+  @ApiOperation({ summary: 'Restore account using token for email' })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: ' Restore token',
+  })
+  @ApiResponse({ status: 200, description: 'Restore account successfully' })
+  @ApiResponse({
+    status: 404,
+    description: 'Bad Request - Invalid or expired token',
+  })
+  public async confirmRestore(@Query('token') token: string) {
+    if (!token) throw new BadRequestException(AUTH_MESSAGES.NO_TOKEN_PROVIDER);
+
+    return this.authService.confirmRestore(token);
   }
 
   // POST ~/auth/refresh
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @HttpCode(StatusCode.OK)
   @ApiCookieAuth('refreshToken')
@@ -225,6 +255,60 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(userId, dto);
+  }
+
+  // Get ~/auth/google
+  @Get('google')
+  @UseGuards(GoogleGuard)
+  public googleAuth() {}
+
+  // Get ~/auth/google/callback
+  @Get('google/callback')
+  @UseGuards(GoogleGuard)
+  public async googleAuthRedirect(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    const { email, first_name, last_name } = req.user as GoogleAuth;
+
+    const { token, needRole, userId } =
+      await this.authService.GoogleAuthRedirect(email, first_name, last_name);
+
+    if (!token || needRole) {
+      return res.send(
+        `${userId} hello , you are in our web site ,choose your role `,
+      );
+    }
+
+    res.cookie(REFRESH_TOKEN, token.refreshToken, this.getCookieOptions());
+
+    return res.send(`${userId} hello , your account in the system`);
+  }
+
+  // Post ~/auth/select-role
+  @Post('select-role')
+  @ApiOperation({ summary: 'Select role from user' })
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    description: 'user id',
+  })
+  @ApiResponse({ status: 200, description: 'Select role successful' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Validation error',
+  })
+  public async selectRole(
+    @Body() body: SelectRoleDto,
+    @Query('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, message, accessToken } =
+      await this.authService.selectRole(id, body);
+
+    res.cookie(REFRESH_TOKEN, refreshToken, this.getCookieOptions());
+
+    return { message, data: { accessToken } };
   }
 
   private getCookieOptions(): CookieOptions {

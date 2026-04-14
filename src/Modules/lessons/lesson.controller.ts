@@ -43,7 +43,6 @@ export class LessonController {
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('videoURL'))
   @ApiOperation({ summary: 'Create a new lesson with video (Instructor only)' })
-  @ApiParam({ name: 'courseId', description: 'Course ID to add lesson to' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -67,34 +66,27 @@ export class LessonController {
     status: 403,
     description: 'Forbidden - Instructor role required',
   })
-  @ApiResponse({ status: 404, description: 'Course not found' })
+  @ApiResponse({ status: 404, description: 'section not found' })
   public createLesson(
     @CurrentUser('id') instId: string,
-    @Param('courseId') courseId: string,
-    @Param('lessonSessionId') lessonSessionId: string,
+    @Param('sectionId') sectionId: string,
     @Body()
     body: addLessonDTO,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.lessonService.createLesson(
-      body,
-      instId,
-      courseId,
-      file.path,
-      lessonSessionId,
-    );
+    return this.lessonService.createLesson(body, instId, file.path, sectionId);
   }
 
   // GET ~/lesson/all/:courseId
   @Get('all/:courseId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all lessons for a course' })
-  @ApiParam({ name: 'courseId', description: 'Course ID' })
+  @ApiOperation({ summary: 'Get all lessons for a section' })
+  @ApiParam({ name: 'sectionId', description: 'section ID' })
   @ApiResponse({ status: 200, description: 'Returns list of lessons' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Course not found' })
-  public getAllLessonWithCourse(@Param('courseId') courseId: string) {
-    return this.lessonService.getAlllessonWithCourse(courseId);
+  @ApiResponse({ status: 404, description: 'section not found' })
+  public getAllLessonWithCourse(@Param('sectionId') sectionId: string) {
+    return this.lessonService.getAlllessonWithSection(sectionId);
   }
 
   // GET ~/lesson/:id
@@ -122,8 +114,12 @@ export class LessonController {
     description: 'Forbidden - Instructor role required',
   })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
-  public updateLesson(@Param('id') id: string, @Body() body: updateLessonDTO) {
-    return this.lessonService.updateLesson(body, id);
+  public updateLesson(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() body: updateLessonDTO,
+  ) {
+    return this.lessonService.updateLesson(body, id, userId);
   }
 
   // DELETE ~/lesson/delete/:id
@@ -139,8 +135,11 @@ export class LessonController {
     description: 'Forbidden - Instructor role required',
   })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
-  public deleteLesson(@Param('id') id: string) {
-    return this.lessonService.deleteLesson(id);
+  public deleteLesson(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.lessonService.deleteLesson(id, userId);
   }
 
   // PATCH ~/lesson/admin/:id/status
