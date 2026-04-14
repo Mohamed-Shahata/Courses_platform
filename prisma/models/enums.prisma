@@ -27,4 +27,10 @@ enum LessonStatus {
   REJECTED
 }
 
-
+enum NOTIFICATION_TYPE {
+  ENROLLMENT 
+  QUIZ_RESULT 
+  PAYMENT     
+  SYSTEM       
+  MESSAGE      
+}

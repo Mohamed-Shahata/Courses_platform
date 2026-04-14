@@ -31,4 +31,6 @@ model User {
   student Student?
 
   userToken UserToken[]
+
+  notifications Notification[]
 }
