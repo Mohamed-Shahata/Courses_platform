@@ -145,7 +145,7 @@ export class AuthService {
     return this.transactionService.runInTransaction(async (tx) => {
       await this.userRepo.verifyEmail(record.userId, tx);
 
-      await this.userTokenRepo.deleteById(record.token, tx);
+      await this.userTokenRepo.deleteById(record.id, tx);
       return { message: AUTH_MESSAGES.EMAIL_VERIFIED };
     });
   }
