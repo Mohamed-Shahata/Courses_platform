@@ -36,6 +36,7 @@ import { OutBoxRepository } from './outbox.repository';
     StudentModule,
     InstructorModule,
   ],
+
   controllers: [AuthController],
   providers: [
     AuthService,
