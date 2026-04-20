@@ -60,6 +60,7 @@ export class AuthController {
   ) {}
 
   // POST => ~/auth/register
+
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
