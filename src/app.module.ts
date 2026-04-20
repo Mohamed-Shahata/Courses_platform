@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DataBaseModule } from './modules/db/database.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { MailModule } from './shared/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
 import { CourseModule } from './modules/course/course.module';
@@ -17,6 +16,7 @@ import { QuizAttemptModule } from './modules/quizAttempt/quizAttempt.module';
 import { StudentModule } from './modules/student/student.module';
 import { InstructorModule } from './modules/instructor/instructor.module';
 import { SectionModule } from './modules/sections/section.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
