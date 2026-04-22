@@ -316,7 +316,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: this.config.get<string>('NODE_ENV') === PRODUCTION,
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: daysToMilliseconds(7),
     };
   }
