@@ -77,7 +77,7 @@ export class AuthService {
     const user = await this.userRepo.findByEmail(email);
     if (user) throw new ConflictException(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await this.hash(password);
     const token = generateToken();
 
     return this.transactionService.runInTransaction(async (tx) => {
@@ -177,9 +177,9 @@ export class AuthService {
 
     let isValid = false;
     if (user) {
-      isValid = await bcrypt.compare(password, user.password_hash);
+      isValid = await this.compare(password, user.password_hash);
     } else {
-      isValid = await bcrypt.compare(password, fakeHash);
+      isValid = await this.compare(password, fakeHash);
     }
     if (!user || !isValid)
       throw new BadRequestException(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
@@ -199,7 +199,7 @@ export class AuthService {
       ) as StringValue,
     });
 
-    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+    const Hrefresh = await this.hash(refreshToken);
     await this.userRepo.updateRefreshToken(user.id, { refreshToken: Hrefresh });
 
     return { message: AUTH_MESSAGES.LOGIN_SUCCESS, accessToken, refreshToken };
@@ -288,7 +288,7 @@ export class AuthService {
     if (!user || !user.refreshToken)
       throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
 
-    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    const isMatch = await this.compare(refreshToken, user.refreshToken);
     if (!isMatch)
       throw new BadRequestException(AUTH_MESSAGES.INVALID_REFRESH_TOKEN);
 
@@ -453,10 +453,7 @@ export class AuthService {
 
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    const isSamePassword = await bcrypt.compare(
-      newPassword,
-      user.password_hash,
-    );
+    const isSamePassword = await this.compare(newPassword, user.password_hash);
 
     if (isSamePassword)
       throw new BadRequestException(AUTH_MESSAGES.CANNOT_USE_OLD_PASSWORD);
@@ -493,7 +490,7 @@ export class AuthService {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    const isMatch = await this.compare(currentPassword, user.password_hash);
     if (!isMatch)
       throw new BadRequestException(AUTH_MESSAGES.CURRENT_PASSWORD_INCORRECT);
 
@@ -503,15 +500,12 @@ export class AuthService {
       );
     }
 
-    const isSamePassword = await bcrypt.compare(
-      newPassword,
-      user.password_hash,
-    );
+    const isSamePassword = await this.compare(newPassword, user.password_hash);
 
     if (isSamePassword)
       throw new BadRequestException(AUTH_MESSAGES.CANNOT_USE_OLD_PASSWORD);
 
-    const hash = await bcrypt.hash(newPassword, 10);
+    const hash = await this.hash(newPassword);
 
     await this.userRepo.updatePassword(userId, { password_hash: hash });
 
@@ -528,7 +522,7 @@ export class AuthService {
     if (!user) {
       const password = randomBytes(12).toString('hex');
 
-      const hash = await bcrypt.hash(password, 10);
+      const hash = await this.hash(password);
 
       const user = await this.userRepo.createUser({
         first_name,
@@ -555,7 +549,7 @@ export class AuthService {
       ) as StringValue,
     });
 
-    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+    const Hrefresh = await this.hash(refreshToken);
     await this.transactionService.runInTransaction(async (tx) => {
       await this.userRepo.updateRefreshToken(
         user.id,
@@ -595,7 +589,7 @@ export class AuthService {
       ) as StringValue,
     });
 
-    const Hrefresh = await bcrypt.hash(refreshToken, 10);
+    const Hrefresh = await this.hash(refreshToken);
 
     return this.transactionService.runInTransaction(async (tx) => {
       await this.userRepo.updateRole(user.id, { role }, tx);
@@ -608,11 +602,25 @@ export class AuthService {
         tx,
       );
 
+      if (role === RoleUser.INSTRUCTOR) {
+        await this.instructorRepo.createInst(user.id, tx);
+      } else {
+        await this.studentRepo.createStudent(user.id, tx);
+      }
+
       return {
         message: AUTH_MESSAGES.LOGIN_SUCCESS,
         accessToken,
         refreshToken,
       };
     });
+  }
+
+  private async hash(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
+
+  private async compare(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
   }
 }
