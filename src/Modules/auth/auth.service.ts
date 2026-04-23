@@ -615,4 +615,12 @@ export class AuthService {
       };
     });
   }
+
+  async FacebookAuthRedirect(
+    email: string,
+    first_name: string,
+    last_name: string,
+  ) {
+    return this.GoogleAuthRedirect(email, first_name, last_name);
+  }
 }
