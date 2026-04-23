@@ -36,13 +36,13 @@ export class OutboxJob {
       };
       try {
         if (msg.event_type === EVENT_TYPE.SEND_VERIFICATION_EMAIL) {
-          const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/verify-email?token=${token}`;
+          const link = `${this.config.get<string>('DOMAIN_FRONTEND_LOCAL')}/auth/verify-email?token=${token}`;
 
           await this.mailService.sendVerifyEmail(email, link);
         }
 
         if (msg.event_type === EVENT_TYPE.SEND_RESET_PASSWORD) {
-          const link = `${this.config.get<string>('DOMAIN')}/api/v1/auth/password/reset?token=${token}`;
+          const link = `${this.config.get<string>('DOMAIN_FRONTEND_LOCAL')}/api/v1/auth/password/reset?token=${token}`;
 
           await this.mailService.resetPassword(email, link);
         }

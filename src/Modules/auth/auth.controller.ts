@@ -38,6 +38,7 @@ import { StatusCode } from 'src/shared/enums/statusCode.enum';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { GoogleGuard } from './guards/google.guard';
 import { SelectRoleDto } from './dto/selectRole.dto';
+import { FacebookGuard } from './guards/facebook.guard';
 
 interface RequestWithCookies extends Request {
   cookies: {
@@ -310,6 +311,33 @@ export class AuthController {
     res.cookie(REFRESH_TOKEN, refreshToken, this.getCookieOptions());
 
     return { message, data: { accessToken } };
+  }
+
+  // Get ~/auth/facebook
+  @Get('facebook')
+  @UseGuards(FacebookGuard)
+  public facebookAuth() {}
+
+  // Get ~/auth/facebook/callback
+  @Get('facebook/callback')
+  @UseGuards(FacebookGuard)
+  public async facebookAuthRedirect(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    const { email, first_name, last_name } = req.user as GoogleAuth;
+    const { token, needRole, userId } =
+      await this.authService.FacebookAuthRedirect(email, first_name, last_name);
+
+    if (!token || needRole) {
+      return res.send(
+        `${userId} hello , you are in our web site , choose your role`,
+      );
+    }
+
+    res.cookie(REFRESH_TOKEN, token.refreshToken, this.getCookieOptions());
+
+    return res.send(`${userId} hello , your account in the system`);
   }
 
   private getCookieOptions(): CookieOptions {

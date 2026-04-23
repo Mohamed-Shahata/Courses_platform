@@ -13,6 +13,7 @@ import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
 import { StudentModule } from '../student/student.module';
 import { InstructorModule } from '../instructor/instructor.module';
 import { OutBoxRepository } from './outbox.repository';
+import { FacebookStrategy } from './strategies/facebook.strategy';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { OutBoxRepository } from './outbox.repository';
     OutBoxRepository,
     GoogleStratgy,
     RefreshTokenStrategy,
+    FacebookStrategy,
   ],
 })
 export class AuthModule {}

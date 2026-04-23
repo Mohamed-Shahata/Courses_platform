@@ -616,6 +616,14 @@ export class AuthService {
     });
   }
 
+  async FacebookAuthRedirect(
+    email: string,
+    first_name: string,
+    last_name: string,
+  ) {
+    return this.GoogleAuthRedirect(email, first_name, last_name);
+  }
+
   private async hash(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
   }
