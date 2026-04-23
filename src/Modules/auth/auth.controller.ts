@@ -61,6 +61,7 @@ export class AuthController {
   ) {}
 
   // POST => ~/auth/register
+
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
@@ -343,7 +344,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: this.config.get<string>('NODE_ENV') === PRODUCTION,
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: daysToMilliseconds(7),
     };
   }

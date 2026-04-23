@@ -19,4 +19,15 @@ export class StudentRepository {
 
     return student;
   }
+
+  async findStudentByUserId(userId: string) {
+    return this.prisma.student.findUnique({
+      where: {
+        userId,
+      },
+      include: {
+        User: true,
+      },
+    });
+  }
 }

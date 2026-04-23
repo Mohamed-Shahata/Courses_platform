@@ -1,22 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { StudentRepository } from './student.repository';
+import { InstructorRepository } from './instructor.repository';
 import { AUTH_MESSAGES, USER_MESSAGES } from 'src/shared/constants/messages';
 import { UserRepository } from '../user/user.repository';
 
 @Injectable()
-export class StudentService {
+export class InstructorService {
   constructor(
-    private studentRepo: StudentRepository,
+    private instructorRepo: InstructorRepository,
     private userRepo: UserRepository,
   ) {}
 
   public async findMe(userId: string) {
-    const student = await this.studentRepo.findStudentByUserId(userId);
+    const instructor = await this.instructorRepo.findByUserId(userId);
 
-    if (!student)
-      throw new BadRequestException(USER_MESSAGES.NOT_FOUND_STUDENT);
+    if (!instructor)
+      throw new BadRequestException(USER_MESSAGES.NOT_FOUND_INST);
 
-    return { data: student };
+    return { data: instructor };
   }
 
   public async deleteAccount(id: string) {

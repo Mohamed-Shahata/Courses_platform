@@ -22,6 +22,9 @@ export class InstructorRepository {
   async findByUserId(userId: string) {
     return this.prisma.instructor.findUnique({
       where: { userId },
+      include: {
+        User: true,
+      },
     });
   }
 }
