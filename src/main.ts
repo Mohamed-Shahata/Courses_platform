@@ -10,7 +10,10 @@ async function bootstrap() {
 
   // enable cors
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: [
+      'http://localhost:5173',
+      'https://subul-platform-k9e7168cw-ahmedmohamedc45-5557s-projects.vercel.app',
+    ],
     credentials: true,
   });
 
