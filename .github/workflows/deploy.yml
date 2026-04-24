@@ -1,0 +1,24 @@
+name: Deploy Courses Platform
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to AWS server
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd Courses_platform
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart nest-app || pm2 start dist/main.js --name nest-app
