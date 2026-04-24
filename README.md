@@ -317,5 +317,6 @@ The project is still under active development. Planned upcoming features include
 ## 🧑‍💻 Author
 
 **Mohamed Shahata**  
+**Farha Ashraf**  
 GitHub: [@Mohamed-Shahata](https://github.com/Mohamed-Shahata) 
 GitHub: [@Farha-Ashraf](https://github.com/farha-158)
