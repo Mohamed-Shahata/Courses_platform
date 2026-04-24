@@ -48,4 +48,6 @@ jobs:
 
             npm ci --omit=dev
 
+            npx prisma generate
+
             pm2 restart courses-app || pm2 start dist/src/main.js --name courses-app
