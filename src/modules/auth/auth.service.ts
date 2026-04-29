@@ -316,6 +316,8 @@ export class AuthService {
 
     const user = await this.userRepo.findByEmail(email);
 
+    if (!user) throw new BadRequestException(AUTH_MESSAGES.ACCOUNT_NOT_FOUND);
+
     if (user && !user.isVerified) {
       await this.transactionService.runInTransaction(async (tx) => {
         const emailVerify = await this.userTokenRepo.findByUserIdAndType({
